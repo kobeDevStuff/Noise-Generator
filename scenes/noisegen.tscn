@@ -1,8 +1,9 @@
-[gd_scene load_steps=5 format=3 uid="uid://bdttbi1kldvv5"]
+[gd_scene load_steps=6 format=3 uid="uid://bdttbi1kldvv5"]
 
 [ext_resource type="Script" uid="uid://dwwqqrjvysih3" path="res://scripts/noisegenerator.gd" id="1_m6oa7"]
 [ext_resource type="Theme" uid="uid://jie24re78fkg" path="res://resources/theme.tres" id="2_4egp4"]
 [ext_resource type="PackedScene" uid="uid://bltoyb1hyc3el" path="res://scenes/color picker.tscn" id="2_6r0l5"]
+[ext_resource type="Texture2D" uid="uid://brahhnlventgu" path="res://resources/cog.png" id="5_7ce7d"]
 [ext_resource type="Texture2D" uid="uid://bq2mwsdy3rh7a" path="res://resources/Folder-1.png" id="5_i8ghl"]
 
 [node name="Node" type="Control"]
@@ -10,6 +11,10 @@ layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 21.0
+offset_top = 19.0
+offset_right = -21.0
+offset_bottom = -21.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_m6oa7")
@@ -21,19 +26,17 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 6.0
-offset_top = 5.0
-offset_right = -6.0
-offset_bottom = -5.0
 grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("2_4egp4")
+theme_override_constants/separation = 24
 
 [node name="NoisePreview" type="PanelContainer" parent="HBoxContainer2"]
 custom_minimum_size = Vector2(512, 512)
 layout_mode = 2
 size_flags_horizontal = 6
 size_flags_vertical = 4
+tooltip_text = "Preview"
 
 [node name="img" type="TextureRect" parent="HBoxContainer2/NoisePreview"]
 layout_mode = 2
@@ -48,7 +51,7 @@ size_flags_horizontal = 3
 
 [node name="Sliders" type="VBoxContainer" parent="HBoxContainer2/Controls"]
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 6
 size_flags_vertical = 3
 
 [node name="Seed" type="VBoxContainer" parent="HBoxContainer2/Controls/Sliders"]
@@ -342,7 +345,7 @@ popup/item_6/id = 6
 
 [node name="Colors" type="VBoxContainer" parent="HBoxContainer2/Controls"]
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 6
 size_flags_vertical = 3
 
 [node name="AddColor" type="Button" parent="HBoxContainer2/Controls/Colors"]
@@ -403,6 +406,7 @@ text = "Color 5"
 
 [node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer2/Controls"]
 layout_mode = 2
+size_flags_horizontal = 6
 
 [node name="Apply" type="Button" parent="HBoxContainer2/Controls/VBoxContainer"]
 layout_mode = 2
@@ -436,6 +440,37 @@ dialog_autowrap = true
 access = 2
 filters = PackedStringArray("*.png", "*.jpg")
 use_native_dialog = true
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer2/Controls/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Label" type="Label" parent="HBoxContainer2/Controls/VBoxContainer/VBoxContainer"]
+layout_mode = 2
+tooltip_text = "Resolution of your output image."
+text = "Image Resolution"
+horizontal_alignment = 1
+vertical_alignment = 2
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="HBoxContainer2/Controls/VBoxContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 2
+
+[node name="imageX" type="LineEdit" parent="HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Translate the noise input coordinates by the given Vector3."
+text = "1024"
+placeholder_text = "x"
+alignment = 1
+
+[node name="imageY" type="LineEdit" parent="HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Translate the noise input coordinates by the given Vector3."
+text = "1024"
+placeholder_text = "y"
+alignment = 1
 
 [node name="CheckButton" type="CheckButton" parent="HBoxContainer2/Controls/VBoxContainer"]
 layout_mode = 2
@@ -497,12 +532,14 @@ theme_override_constants/separation = 0
 
 [node name="Label" type="Label" parent="HBoxContainer2/Controls/VBoxContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
+size_flags_vertical = 10
 text = "Generate every:"
 horizontal_alignment = 1
 vertical_alignment = 2
 
 [node name="OptionButton" type="OptionButton" parent="HBoxContainer2/Controls/VBoxContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
+size_flags_vertical = 2
 tooltip_text = "Duration between noise generations
 "
 selected = 1
@@ -526,18 +563,30 @@ popup/item_7/id = 3600
 popup/item_8/text = "3 hours"
 popup/item_8/id = 10800
 
-[node name="TextureButton" type="TextureButton" parent="HBoxContainer2/Controls/VBoxContainer/HBoxContainer"]
-custom_minimum_size = Vector2(25, 25)
+[node name="VBoxContainer2" type="VBoxContainer" parent="HBoxContainer2/Controls/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="folder" type="Button" parent="HBoxContainer2/Controls/VBoxContainer/HBoxContainer/VBoxContainer2"]
+custom_minimum_size = Vector2(50, 50)
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 6
 tooltip_text = "Location you want the images to save to."
-texture_normal = ExtResource("5_i8ghl")
-texture_pressed = ExtResource("5_i8ghl")
-texture_hover = ExtResource("5_i8ghl")
-texture_disabled = ExtResource("5_i8ghl")
-texture_focused = ExtResource("5_i8ghl")
-ignore_texture_size = true
-stretch_mode = 5
+icon = ExtResource("5_i8ghl")
+flat = true
+icon_alignment = 1
+expand_icon = true
+
+[node name="cog" type="Button" parent="HBoxContainer2/Controls/VBoxContainer/HBoxContainer/VBoxContainer2"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 6
+tooltip_text = "Adjust auto-generation settings."
+icon = ExtResource("5_7ce7d")
+flat = true
+icon_alignment = 1
+expand_icon = true
 
 [connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]
 [connection signal="text_changed" from="HBoxContainer2/Controls/Sliders/Seed/Seed" to="." method="_on_seed_text_changed"]
@@ -567,13 +616,16 @@ stretch_mode = 5
 [connection signal="pressed" from="HBoxContainer2/Controls/VBoxContainer/RandomiseCol" to="." method="_on_randomise_col_pressed"]
 [connection signal="pressed" from="HBoxContainer2/Controls/VBoxContainer/Save" to="." method="_on_save_pressed"]
 [connection signal="file_selected" from="HBoxContainer2/Controls/VBoxContainer/Save/FileDialog" to="." method="_on_file_dialog_file_selected"]
+[connection signal="text_changed" from="HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2/imageX" to="." method="_on_image_x_text_changed"]
+[connection signal="text_changed" from="HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2/imageY" to="." method="_on_image_y_text_changed"]
 [connection signal="toggled" from="HBoxContainer2/Controls/VBoxContainer/CheckButton" to="." method="_on_check_button_toggled"]
 [connection signal="dir_selected" from="HBoxContainer2/Controls/VBoxContainer/CheckButton/FileDialog" to="." method="_on_file_dialog_dir_selected"]
 [connection signal="canceled" from="HBoxContainer2/Controls/VBoxContainer/CheckButton/ConfirmationDialog" to="." method="_on_confirmation_dialog_canceled"]
 [connection signal="confirmed" from="HBoxContainer2/Controls/VBoxContainer/CheckButton/ConfirmationDialog" to="." method="_on_confirmation_dialog_confirmed"]
 [connection signal="id_pressed" from="HBoxContainer2/Controls/VBoxContainer/CheckButton/PopupMenu" to="." method="_on_popup_menu_id_pressed"]
 [connection signal="item_selected" from="HBoxContainer2/Controls/VBoxContainer/HBoxContainer/VBoxContainer/OptionButton" to="." method="_on_option_button_item_selected"]
-[connection signal="pressed" from="HBoxContainer2/Controls/VBoxContainer/HBoxContainer/TextureButton" to="." method="_on_texture_button_pressed"]
+[connection signal="pressed" from="HBoxContainer2/Controls/VBoxContainer/HBoxContainer/VBoxContainer2/folder" to="." method="_on_texture_button_pressed"]
+[connection signal="pressed" from="HBoxContainer2/Controls/VBoxContainer/HBoxContainer/VBoxContainer2/cog" to="." method="_on_cog_pressed"]
 
 [editable path="HBoxContainer2/Controls/Colors/VBoxContainer"]
 [editable path="HBoxContainer2/Controls/Colors/VBoxContainer2"]

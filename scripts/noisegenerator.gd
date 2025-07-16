@@ -626,4 +626,20 @@ func _on_confirmation_dialog_canceled() -> void:
 func _on_popup_menu_id_pressed(id: int) -> void:
 	max_photo_limit = id
 	SaveManager.save_prefs({"save-file": file_path, "auto-save-file": auto_file_path, "auto-save-time": auto_time, "max-photo-limit": max_photo_limit})
+
+func _on_cog_pressed() -> void:
+	popup_menu.popup_centered()
+
+func _on_image_x_text_changed(new_text: String) -> void:
+	if new_text.is_valid_int():
+		var i := new_text.to_int()
+		if i > 0 and i < 4096:
+			target_resolution.x = new_text.to_int()
+
+func _on_image_y_text_changed(new_text: String) -> void:
+	if new_text.is_valid_int():
+		var i := new_text.to_int()
+		if i > 0 and i < 4096:
+			target_resolution.x = new_text.to_int()
+
 #endregion
