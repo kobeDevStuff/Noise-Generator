@@ -1,0 +1,36 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="Noise Generator"
+config/description="A simple application to generate noise textures."
+config/version="1.0.0"
+run/main_scene="uid://bdttbi1kldvv5"
+config/features=PackedStringArray("4.4", "Forward Plus")
+config/icon="uid://bw8eftxkay4ll"
+config/windows_native_icon="res://resources/Icon.ico"
+
+[autoload]
+
+ControlManager="*res://scripts/control_manager.gd"
+SaveManager="*res://scripts/save_manager.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/aspect="expand"
+window/vsync/vsync_mode=0
+
+[rendering]
+
+anti_aliasing/quality/msaa_2d=2
+environment/defaults/default_clear_color=Color(0.933333, 0.933333, 0.933333, 1)

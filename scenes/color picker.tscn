@@ -1,0 +1,24 @@
+[gd_scene load_steps=2 format=3 uid="uid://bltoyb1hyc3el"]
+
+[ext_resource type="Script" uid="uid://dn2w1wyagu538" path="res://scripts/color_picker.gd" id="1_hun8d"]
+
+[node name="VBoxContainer" type="VBoxContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+script = ExtResource("1_hun8d")
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 2
+size_flags_vertical = 8
+text = "Color 1"
+horizontal_alignment = 1
+vertical_alignment = 2
+
+[node name="colour" type="ColorPickerButton" parent="."]
+custom_minimum_size = Vector2(80, 24)
+layout_mode = 2
+size_flags_vertical = 3
+
+[connection signal="color_changed" from="colour" to="." method="_on_colour_color_changed"]
+[connection signal="popup_closed" from="colour" to="." method="_on_colour_popup_closed"]
