@@ -16,18 +16,22 @@ const PREVIEW_RESOLUTION: Vector2 = Vector2(512, 512)
 @export var target_resolution: Vector2 = Vector2(3413, 1920) #1.333333333333 * DisplayServer.screen_get_size(DisplayServer.window_get_current_screen()) Dynamic way
 @export var file_path: String
 @export var auto_file_path: String
-var auto_time: int
+var auto_time: float
 var max_photo_limit: int
 var background: bool = false
+var auto_save_num: int
 
 ## Color picker
 const COLOR_PICKER = preload("res://scenes/color picker.tscn")
 
-@onready var color_container: VBoxContainer = $CanvasLayer/HBoxContainer2/Controls/Colors
-@onready var img: TextureRect = $CanvasLayer/HBoxContainer2/NoisePreview/img
+@onready var color_container: VBoxContainer = $HBoxContainer2/Controls/Colors
+@onready var img: TextureRect = $HBoxContainer2/NoisePreview/img
 @onready var timer: Timer = $Timer
-@onready var option_button: OptionButton = $CanvasLayer/HBoxContainer2/Controls/VBoxContainer/HBoxContainer/VBoxContainer/OptionButton
-@onready var check_button: CheckButton = $CanvasLayer/HBoxContainer2/Controls/VBoxContainer/CheckButton
+@onready var option_button: OptionButton = $HBoxContainer2/Controls/VBoxContainer/HBoxContainer/VBoxContainer/OptionButton
+@onready var check_button: CheckButton = $HBoxContainer2/Controls/VBoxContainer/CheckButton
+@onready var file_dialog: FileDialog = $HBoxContainer2/Controls/VBoxContainer/CheckButton/FileDialog
+@onready var confirmation_dialog: ConfirmationDialog = $HBoxContainer2/Controls/VBoxContainer/CheckButton/ConfirmationDialog
+@onready var popup_menu: PopupMenu = $HBoxContainer2/Controls/VBoxContainer/CheckButton/PopupMenu
 
 #region rendering
 var _rd: RenderingDevice = null
@@ -47,18 +51,18 @@ var _view: RDTextureView
 var _rid_free_queue: Array[RID] = []
 #endregion
 #region Sliders
-@onready var _seed: LineEdit = $CanvasLayer/HBoxContainer2/Controls/Sliders/Seed/Seed
-@onready var _frequency: HSlider = $CanvasLayer/HBoxContainer2/Controls/Sliders/Frequency/Frequency
-@onready var _offset_x: LineEdit = $CanvasLayer/HBoxContainer2/Controls/Sliders/Offset/HBoxContainer/X
-@onready var _offset_y: LineEdit = $CanvasLayer/HBoxContainer2/Controls/Sliders/Offset/HBoxContainer/Y
-@onready var _noise_type: OptionButton = $CanvasLayer/HBoxContainer2/Controls/Sliders/NoiseType/NoiseType
-@onready var _fractal_type: OptionButton = $CanvasLayer/HBoxContainer2/Controls/Sliders/FractalType/FractalType
-@onready var _cellular_dist_func: OptionButton = $CanvasLayer/HBoxContainer2/Controls/Sliders/CellularDistanceFunction/CellularDistFunc
-@onready var _cellular_return_type: OptionButton = $CanvasLayer/HBoxContainer2/Controls/Sliders/CellularRetType/CellularReturnType
-@onready var _fractal_octaves: HSlider = $"CanvasLayer/HBoxContainer2/Controls/Sliders/Fractal Octaves/Fractal Octaves"
-@onready var _fractal_gain: HSlider = $"CanvasLayer/HBoxContainer2/Controls/Sliders/Fractal Gain/Fractal Gain"
-@onready var _fractal_lacunarity: HSlider = $"CanvasLayer/HBoxContainer2/Controls/Sliders/Fractal Lacunarity/Fractal Lacunarity"
-@onready var _cellular_jitter: HSlider = $CanvasLayer/HBoxContainer2/Controls/Sliders/CellularJitter/CellularJitter
+@onready var _seed: LineEdit = $HBoxContainer2/Controls/Sliders/Seed/Seed
+@onready var _frequency: HSlider = $HBoxContainer2/Controls/Sliders/Frequency/Frequency
+@onready var _offset_x: LineEdit = $HBoxContainer2/Controls/Sliders/Offset/HBoxContainer/X
+@onready var _offset_y: LineEdit = $HBoxContainer2/Controls/Sliders/Offset/HBoxContainer/Y
+@onready var _noise_type: OptionButton = $HBoxContainer2/Controls/Sliders/NoiseType/NoiseType
+@onready var _fractal_type: OptionButton = $HBoxContainer2/Controls/Sliders/FractalType/FractalType
+@onready var _cellular_dist_func: OptionButton = $HBoxContainer2/Controls/Sliders/CellularDistanceFunction/CellularDistFunc
+@onready var _cellular_return_type: OptionButton = $HBoxContainer2/Controls/Sliders/CellularRetType/CellularReturnType
+@onready var _fractal_octaves: HSlider = $"HBoxContainer2/Controls/Sliders/Fractal Octaves/Fractal Octaves"
+@onready var _fractal_gain: HSlider = $"HBoxContainer2/Controls/Sliders/Fractal Gain/Fractal Gain"
+@onready var _fractal_lacunarity: HSlider = $"HBoxContainer2/Controls/Sliders/Fractal Lacunarity/Fractal Lacunarity"
+@onready var _cellular_jitter: HSlider = $HBoxContainer2/Controls/Sliders/CellularJitter/CellularJitter
 #endregion
 #region Noise controls
 ## The random number seed for all noise types.
@@ -154,7 +158,7 @@ func _ready():
 	auto_time = save["auto-save-time"]
 	max_photo_limit = save["max-photo-limit"]
 	
-	if auto_time > 0:
+	if auto_time >= 0:
 		option_button.selected = option_button.get_item_index(auto_time)
 	
 	_rd = RenderingServer.create_local_rendering_device()
@@ -393,8 +397,8 @@ func update_sliders() -> void:
 	_cellular_return_type.selected = cellular_return_type
 
 func start_timer(time: int) -> void:
-	if time > 0:
-		timer.start(time)
+	if time >= 0:
+		timer.start(time + 0.01)
 
 func save_to_file(image: Image, path: String) -> void:
 	if path == "" or path == null:
@@ -415,6 +419,27 @@ func save_to_file(image: Image, path: String) -> void:
 			push_error("Failed to save image: %s", % err)
 	else:
 		printerr("Incorrect file format, use .png or .jpg")
+
+func count_photos_in_directory(directory_path: String) -> int:
+	var count = 0
+	var dir = DirAccess.open(directory_path)
+
+	if dir:
+		dir.list_dir_begin() # Start listing directory contents
+		var file_name = dir.get_next()
+		while file_name != "":
+			if dir.current_is_dir():
+				# Skip subdirectories, we only care about files for this count
+				pass
+			else:
+				if file_name.contains("AUTO-SAVE_") and (file_name.contains(".png") or file_name.contains(".jpg")):
+					count += 1
+			file_name = dir.get_next()
+		dir.list_dir_end() # End listing directory contents
+	else:
+		push_error("Could not open directory: %s" % directory_path)
+	return count
+
 #region events
 func _on_menu_item_pressed(id: int) -> void:
 	match id:
@@ -422,7 +447,9 @@ func _on_menu_item_pressed(id: int) -> void:
 			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 			get_window().show()
 		2:
-			$CanvasLayer/HBoxContainer2/Controls/VBoxContainer/CheckButton/PopupMenu.popup_centered()
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+			get_window().show()
+			$HBoxContainer2/Controls/VBoxContainer/CheckButton/PopupMenu.popup_centered()
 		3:
 			get_tree().quit()
 
@@ -536,7 +563,7 @@ func _on_randomise_col_pressed() -> void:
 	randomise_colors()
 
 func _on_save_pressed() -> void:
-	$CanvasLayer/HBoxContainer2/Controls/VBoxContainer/Save/FileDialog.visible = true
+	$HBoxContainer2/Controls/VBoxContainer/Save/FileDialog.visible = true
 
 func _on_file_dialog_file_selected(path: String) -> void:
 	file_path = path
@@ -550,15 +577,16 @@ func _on_apply_pressed() -> void:
 
 func _on_check_button_toggled(toggled_on: bool) -> void:
 	if toggled_on:
-		$CanvasLayer/HBoxContainer2/Controls/VBoxContainer/CheckButton/ConfirmationDialog.popup_centered()
-		$CanvasLayer/HBoxContainer2/Controls/VBoxContainer/HBoxContainer.visible = true
+		confirmation_dialog.popup_centered()
+		$HBoxContainer2/Controls/VBoxContainer/HBoxContainer.visible = true
 	else:
-		$CanvasLayer/HBoxContainer2/Controls/VBoxContainer/HBoxContainer.visible = false
+		$HBoxContainer2/Controls/VBoxContainer/HBoxContainer.visible = false
+		background = false
 		timer.stop()
 		get_tree().set_auto_accept_quit(true)
 
 func _on_texture_button_pressed() -> void:
-	$CanvasLayer/HBoxContainer2/Controls/VBoxContainer/CheckButton/FileDialog.visible = true
+	file_dialog.visible = true
 
 func _on_option_button_item_selected(index: int) -> void:
 	auto_time = option_button.get_item_id(index)
@@ -568,14 +596,22 @@ func _on_file_dialog_dir_selected(dir: String) -> void:
 	auto_file_path = dir
 	SaveManager.save_prefs({"save-file": file_path, "auto-save-file": auto_file_path, "auto-save-time": auto_time, "max-photo-limit": max_photo_limit})
 
-	if auto_file_path != "" and auto_time > 0:
+	if auto_file_path != "" and auto_time >= 0:
 		start_timer(auto_time)
 
 func _on_timer_timeout() -> void:
-	if auto_file_path != "" and auto_time > 0:
+	if auto_file_path != "" and auto_time >= 0:
+		if file_dialog.is_visible() and confirmation_dialog.is_visible() and popup_menu.is_visible(): # Wait for user to exit
+			start_timer(auto_time)
+			return
+		
+		var num_images: int = count_photos_in_directory(auto_file_path)
+		if num_images >= max_photo_limit: # stop generating
+			check_button.set_pressed(false)
+			return
 		randomise_colors()
 		randomise_sliders()
-		save_to_file(refresh_image(target_resolution).get_image(), auto_file_path + "/AUTO-SAVE_" + Time.get_datetime_string_from_system(false, true).replace(":", "-") + ".png")
+		save_to_file(refresh_image(target_resolution).get_image(), auto_file_path + "/AUTO-SAVE_" + str(num_images+1).pad_zeros(3) + ".png")
 		start_timer(auto_time)
 
 func _on_confirmation_dialog_confirmed() -> void:

@@ -7,52 +7,57 @@
 
 [node name="Node" type="Control"]
 layout_mode = 3
-anchors_preset = 0
-script = ExtResource("1_m6oa7")
-
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
-
-[node name="HBoxContainer2" type="HBoxContainer" parent="CanvasLayer"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 16.0
-offset_top = 16.0
-offset_right = -22.0
-offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_m6oa7")
+
+[node name="Timer" type="Timer" parent="."]
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = 5.0
+offset_right = -6.0
+offset_bottom = -5.0
 grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("2_4egp4")
 
-[node name="NoisePreview" type="PanelContainer" parent="CanvasLayer/HBoxContainer2"]
+[node name="NoisePreview" type="PanelContainer" parent="HBoxContainer2"]
 custom_minimum_size = Vector2(512, 512)
 layout_mode = 2
 size_flags_horizontal = 6
 size_flags_vertical = 4
 
-[node name="img" type="TextureRect" parent="CanvasLayer/HBoxContainer2/NoisePreview"]
+[node name="img" type="TextureRect" parent="HBoxContainer2/NoisePreview"]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 expand_mode = 1
 stretch_mode = 3
 
-[node name="Controls" type="HBoxContainer" parent="CanvasLayer/HBoxContainer2"]
+[node name="Controls" type="HBoxContainer" parent="HBoxContainer2"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Sliders" type="VBoxContainer" parent="CanvasLayer/HBoxContainer2/Controls"]
+[node name="Sliders" type="VBoxContainer" parent="HBoxContainer2/Controls"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="Seed" type="VBoxContainer" parent="CanvasLayer/HBoxContainer2/Controls/Sliders"]
+[node name="Seed" type="VBoxContainer" parent="HBoxContainer2/Controls/Sliders"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 6
 theme_override_constants/separation = 0
 
-[node name="Label" type="Label" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/Seed"]
+[node name="Label" type="Label" parent="HBoxContainer2/Controls/Sliders/Seed"]
 layout_mode = 2
 size_flags_vertical = 8
 tooltip_text = "The random number seed for all noise types."
@@ -61,17 +66,17 @@ text = "Seed"
 horizontal_alignment = 1
 vertical_alignment = 2
 
-[node name="Seed" type="LineEdit" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/Seed"]
+[node name="Seed" type="LineEdit" parent="HBoxContainer2/Controls/Sliders/Seed"]
 layout_mode = 2
 tooltip_text = "The random number seed for all noise types."
 placeholder_text = "Random"
 
-[node name="NoiseType" type="VBoxContainer" parent="CanvasLayer/HBoxContainer2/Controls/Sliders"]
+[node name="NoiseType" type="VBoxContainer" parent="HBoxContainer2/Controls/Sliders"]
 layout_mode = 2
 size_flags_vertical = 6
 theme_override_constants/separation = 0
 
-[node name="Label" type="Label" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/NoiseType"]
+[node name="Label" type="Label" parent="HBoxContainer2/Controls/Sliders/NoiseType"]
 layout_mode = 2
 tooltip_text = "The noise algorithm used."
 mouse_filter = 0
@@ -79,7 +84,7 @@ text = "Noise Type"
 horizontal_alignment = 1
 vertical_alignment = 2
 
-[node name="NoiseType" type="OptionButton" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/NoiseType"]
+[node name="NoiseType" type="OptionButton" parent="HBoxContainer2/Controls/Sliders/NoiseType"]
 layout_mode = 2
 size_flags_vertical = 2
 tooltip_text = "The noise algorithm used."
@@ -98,13 +103,13 @@ popup/item_4/id = 0
 popup/item_5/text = "Simplex Smooth"
 popup/item_5/id = 1
 
-[node name="Frequency" type="VBoxContainer" parent="CanvasLayer/HBoxContainer2/Controls/Sliders"]
+[node name="Frequency" type="VBoxContainer" parent="HBoxContainer2/Controls/Sliders"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 6
 theme_override_constants/separation = 0
 
-[node name="Label" type="Label" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/Frequency"]
+[node name="Label" type="Label" parent="HBoxContainer2/Controls/Sliders/Frequency"]
 layout_mode = 2
 size_flags_vertical = 8
 tooltip_text = "The frequency for all noise types. Low frequency results in smooth noise while high frequency results in rougher, more granular noise."
@@ -113,7 +118,7 @@ text = "Frequency"
 horizontal_alignment = 1
 vertical_alignment = 2
 
-[node name="Frequency" type="HSlider" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/Frequency"]
+[node name="Frequency" type="HSlider" parent="HBoxContainer2/Controls/Sliders/Frequency"]
 layout_mode = 2
 size_flags_vertical = 2
 tooltip_text = "The frequency for all noise types. Low frequency results in smooth noise while high frequency results in rougher, more granular noise."
@@ -121,13 +126,13 @@ max_value = 0.1
 step = 0.0
 value = 0.05
 
-[node name="Offset" type="VBoxContainer" parent="CanvasLayer/HBoxContainer2/Controls/Sliders"]
+[node name="Offset" type="VBoxContainer" parent="HBoxContainer2/Controls/Sliders"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 6
 theme_override_constants/separation = 0
 
-[node name="Label" type="Label" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/Offset"]
+[node name="Label" type="Label" parent="HBoxContainer2/Controls/Sliders/Offset"]
 layout_mode = 2
 size_flags_vertical = 8
 tooltip_text = "Translate the noise input coordinates by the given Vector2."
@@ -136,29 +141,29 @@ text = "Offset"
 horizontal_alignment = 1
 vertical_alignment = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/Offset"]
+[node name="HBoxContainer" type="HBoxContainer" parent="HBoxContainer2/Controls/Sliders/Offset"]
 layout_mode = 2
 
-[node name="X" type="LineEdit" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/Offset/HBoxContainer"]
+[node name="X" type="LineEdit" parent="HBoxContainer2/Controls/Sliders/Offset/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 tooltip_text = "Translate the noise input coordinates by the given Vector3."
 placeholder_text = "x"
 alignment = 1
 
-[node name="Y" type="LineEdit" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/Offset/HBoxContainer"]
+[node name="Y" type="LineEdit" parent="HBoxContainer2/Controls/Sliders/Offset/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 tooltip_text = "Translate the noise input coordinates by the given Vector3."
 placeholder_text = "y"
 alignment = 1
 
-[node name="FractalType" type="VBoxContainer" parent="CanvasLayer/HBoxContainer2/Controls/Sliders"]
+[node name="FractalType" type="VBoxContainer" parent="HBoxContainer2/Controls/Sliders"]
 layout_mode = 2
 size_flags_vertical = 6
 theme_override_constants/separation = 0
 
-[node name="Label" type="Label" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/FractalType"]
+[node name="Label" type="Label" parent="HBoxContainer2/Controls/Sliders/FractalType"]
 layout_mode = 2
 tooltip_text = "Method for combining octaves into a fractal. See FractalType for options."
 mouse_filter = 0
@@ -166,7 +171,7 @@ text = "Fractal Type"
 horizontal_alignment = 1
 vertical_alignment = 2
 
-[node name="FractalType" type="OptionButton" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/FractalType"]
+[node name="FractalType" type="OptionButton" parent="HBoxContainer2/Controls/Sliders/FractalType"]
 layout_mode = 2
 size_flags_vertical = 2
 tooltip_text = "Method for combining octaves into a fractal. See FractalType for options."
@@ -181,13 +186,13 @@ popup/item_2/id = 2
 popup/item_3/text = "Ping Pong"
 popup/item_3/id = 3
 
-[node name="Fractal Octaves" type="VBoxContainer" parent="CanvasLayer/HBoxContainer2/Controls/Sliders"]
+[node name="Fractal Octaves" type="VBoxContainer" parent="HBoxContainer2/Controls/Sliders"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 6
 theme_override_constants/separation = 0
 
-[node name="Label" type="Label" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/Fractal Octaves"]
+[node name="Label" type="Label" parent="HBoxContainer2/Controls/Sliders/Fractal Octaves"]
 layout_mode = 2
 size_flags_vertical = 8
 tooltip_text = "The number of noise layers that are sampled to get the final value for fractal noise types."
@@ -196,7 +201,7 @@ text = "Fractal Octaves"
 horizontal_alignment = 1
 vertical_alignment = 2
 
-[node name="Fractal Octaves" type="HSlider" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/Fractal Octaves"]
+[node name="Fractal Octaves" type="HSlider" parent="HBoxContainer2/Controls/Sliders/Fractal Octaves"]
 layout_mode = 2
 size_flags_vertical = 2
 tooltip_text = "The number of noise layers that are sampled to get the final value for fractal noise types."
@@ -204,13 +209,13 @@ min_value = 1.0
 max_value = 12.0
 value = 1.0
 
-[node name="Fractal Gain" type="VBoxContainer" parent="CanvasLayer/HBoxContainer2/Controls/Sliders"]
+[node name="Fractal Gain" type="VBoxContainer" parent="HBoxContainer2/Controls/Sliders"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 6
 theme_override_constants/separation = 0
 
-[node name="Label" type="Label" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/Fractal Gain"]
+[node name="Label" type="Label" parent="HBoxContainer2/Controls/Sliders/Fractal Gain"]
 layout_mode = 2
 size_flags_vertical = 8
 tooltip_text = "Determines the strength of each subsequent layer of noise in fractal noise."
@@ -219,7 +224,7 @@ text = "Fractal Gain"
 horizontal_alignment = 1
 vertical_alignment = 2
 
-[node name="Fractal Gain" type="HSlider" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/Fractal Gain"]
+[node name="Fractal Gain" type="HSlider" parent="HBoxContainer2/Controls/Sliders/Fractal Gain"]
 layout_mode = 2
 size_flags_vertical = 2
 tooltip_text = "Determines the strength of each subsequent layer of noise in fractal noise."
@@ -227,13 +232,13 @@ max_value = 2.0
 step = 0.01
 value = 0.01
 
-[node name="Fractal Lacunarity" type="VBoxContainer" parent="CanvasLayer/HBoxContainer2/Controls/Sliders"]
+[node name="Fractal Lacunarity" type="VBoxContainer" parent="HBoxContainer2/Controls/Sliders"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 6
 theme_override_constants/separation = 0
 
-[node name="Label" type="Label" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/Fractal Lacunarity"]
+[node name="Label" type="Label" parent="HBoxContainer2/Controls/Sliders/Fractal Lacunarity"]
 layout_mode = 2
 size_flags_vertical = 8
 tooltip_text = "Frequency multiplier between subsequent octaves in fractal noise."
@@ -242,7 +247,7 @@ text = "Fractal Lacunarity"
 horizontal_alignment = 1
 vertical_alignment = 2
 
-[node name="Fractal Lacunarity" type="HSlider" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/Fractal Lacunarity"]
+[node name="Fractal Lacunarity" type="HSlider" parent="HBoxContainer2/Controls/Sliders/Fractal Lacunarity"]
 layout_mode = 2
 size_flags_vertical = 2
 tooltip_text = "Frequency multiplier between subsequent octaves in fractal noise."
@@ -250,12 +255,12 @@ max_value = 5.0
 step = 0.01
 value = 0.01
 
-[node name="CellularDistanceFunction" type="VBoxContainer" parent="CanvasLayer/HBoxContainer2/Controls/Sliders"]
+[node name="CellularDistanceFunction" type="VBoxContainer" parent="HBoxContainer2/Controls/Sliders"]
 layout_mode = 2
 size_flags_vertical = 6
 theme_override_constants/separation = 0
 
-[node name="Label" type="Label" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/CellularDistanceFunction"]
+[node name="Label" type="Label" parent="HBoxContainer2/Controls/Sliders/CellularDistanceFunction"]
 layout_mode = 2
 tooltip_text = "Determines how the distance to the nearest/second-nearest point is computed."
 mouse_filter = 0
@@ -263,7 +268,7 @@ text = "Cellular Distance Function"
 horizontal_alignment = 1
 vertical_alignment = 2
 
-[node name="CellularDistFunc" type="OptionButton" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/CellularDistanceFunction"]
+[node name="CellularDistFunc" type="OptionButton" parent="HBoxContainer2/Controls/Sliders/CellularDistanceFunction"]
 layout_mode = 2
 size_flags_vertical = 2
 tooltip_text = "Determines how the distance to the nearest/second-nearest point is computed."
@@ -278,13 +283,13 @@ popup/item_2/id = 2
 popup/item_3/text = "Hybrid"
 popup/item_3/id = 3
 
-[node name="CellularJitter" type="VBoxContainer" parent="CanvasLayer/HBoxContainer2/Controls/Sliders"]
+[node name="CellularJitter" type="VBoxContainer" parent="HBoxContainer2/Controls/Sliders"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 6
 theme_override_constants/separation = 0
 
-[node name="Label" type="Label" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/CellularJitter"]
+[node name="Label" type="Label" parent="HBoxContainer2/Controls/Sliders/CellularJitter"]
 layout_mode = 2
 size_flags_vertical = 8
 tooltip_text = "Maximum distance a point can move off of its grid position. Set to 0 for an even grid."
@@ -293,7 +298,7 @@ text = "Cellular Jitter"
 horizontal_alignment = 1
 vertical_alignment = 2
 
-[node name="CellularJitter" type="HSlider" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/CellularJitter"]
+[node name="CellularJitter" type="HSlider" parent="HBoxContainer2/Controls/Sliders/CellularJitter"]
 layout_mode = 2
 size_flags_vertical = 2
 tooltip_text = "Maximum distance a point can move off of its grid position. Set to 0 for an even grid."
@@ -301,12 +306,12 @@ max_value = 2.0
 step = 0.01
 value = 0.01
 
-[node name="CellularRetType" type="VBoxContainer" parent="CanvasLayer/HBoxContainer2/Controls/Sliders"]
+[node name="CellularRetType" type="VBoxContainer" parent="HBoxContainer2/Controls/Sliders"]
 layout_mode = 2
 size_flags_vertical = 6
 theme_override_constants/separation = 0
 
-[node name="Label" type="Label" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/CellularRetType"]
+[node name="Label" type="Label" parent="HBoxContainer2/Controls/Sliders/CellularRetType"]
 layout_mode = 2
 tooltip_text = "Return type from cellular noise calculations."
 mouse_filter = 0
@@ -314,7 +319,7 @@ text = "Cellular Return Type"
 horizontal_alignment = 1
 vertical_alignment = 2
 
-[node name="CellularReturnType" type="OptionButton" parent="CanvasLayer/HBoxContainer2/Controls/Sliders/CellularRetType"]
+[node name="CellularReturnType" type="OptionButton" parent="HBoxContainer2/Controls/Sliders/CellularRetType"]
 layout_mode = 2
 size_flags_vertical = 2
 tooltip_text = "Return type from cellular noise calculations."
@@ -335,110 +340,110 @@ popup/item_5/id = 5
 popup/item_6/text = "Distance 2 Divide"
 popup/item_6/id = 6
 
-[node name="Colors" type="VBoxContainer" parent="CanvasLayer/HBoxContainer2/Controls"]
+[node name="Colors" type="VBoxContainer" parent="HBoxContainer2/Controls"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="AddColor" type="Button" parent="CanvasLayer/HBoxContainer2/Controls/Colors"]
+[node name="AddColor" type="Button" parent="HBoxContainer2/Controls/Colors"]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 0
 tooltip_text = "Add a color to the palette."
 text = "Add color"
 
-[node name="RemoveColor" type="Button" parent="CanvasLayer/HBoxContainer2/Controls/Colors"]
+[node name="RemoveColor" type="Button" parent="HBoxContainer2/Controls/Colors"]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 0
 tooltip_text = "Remove a color from the palette."
 text = "Remove color"
 
-[node name="HSeparator" type="HSeparator" parent="CanvasLayer/HBoxContainer2/Controls/Colors"]
+[node name="HSeparator" type="HSeparator" parent="HBoxContainer2/Controls/Colors"]
 layout_mode = 2
 
-[node name="VBoxContainer" parent="CanvasLayer/HBoxContainer2/Controls/Colors" instance=ExtResource("2_6r0l5")]
+[node name="VBoxContainer" parent="HBoxContainer2/Controls/Colors" instance=ExtResource("2_6r0l5")]
 layout_mode = 2
 
-[node name="colour" parent="CanvasLayer/HBoxContainer2/Controls/Colors/VBoxContainer" index="1"]
+[node name="colour" parent="HBoxContainer2/Controls/Colors/VBoxContainer" index="1"]
 color = Color(1, 1, 1, 1)
 
-[node name="VBoxContainer2" parent="CanvasLayer/HBoxContainer2/Controls/Colors" instance=ExtResource("2_6r0l5")]
+[node name="VBoxContainer2" parent="HBoxContainer2/Controls/Colors" instance=ExtResource("2_6r0l5")]
 layout_mode = 2
 
-[node name="Label" parent="CanvasLayer/HBoxContainer2/Controls/Colors/VBoxContainer2" index="0"]
+[node name="Label" parent="HBoxContainer2/Controls/Colors/VBoxContainer2" index="0"]
 text = "Color 2"
 
-[node name="colour" parent="CanvasLayer/HBoxContainer2/Controls/Colors/VBoxContainer2" index="1"]
+[node name="colour" parent="HBoxContainer2/Controls/Colors/VBoxContainer2" index="1"]
 color = Color(0.75, 0.75, 0.75, 1)
 
-[node name="VBoxContainer3" parent="CanvasLayer/HBoxContainer2/Controls/Colors" instance=ExtResource("2_6r0l5")]
+[node name="VBoxContainer3" parent="HBoxContainer2/Controls/Colors" instance=ExtResource("2_6r0l5")]
 layout_mode = 2
 
-[node name="Label" parent="CanvasLayer/HBoxContainer2/Controls/Colors/VBoxContainer3" index="0"]
+[node name="Label" parent="HBoxContainer2/Controls/Colors/VBoxContainer3" index="0"]
 text = "Color 3"
 
-[node name="colour" parent="CanvasLayer/HBoxContainer2/Controls/Colors/VBoxContainer3" index="1"]
+[node name="colour" parent="HBoxContainer2/Controls/Colors/VBoxContainer3" index="1"]
 color = Color(0.5, 0.5, 0.5, 1)
 
-[node name="VBoxContainer4" parent="CanvasLayer/HBoxContainer2/Controls/Colors" instance=ExtResource("2_6r0l5")]
+[node name="VBoxContainer4" parent="HBoxContainer2/Controls/Colors" instance=ExtResource("2_6r0l5")]
 layout_mode = 2
 
-[node name="Label" parent="CanvasLayer/HBoxContainer2/Controls/Colors/VBoxContainer4" index="0"]
+[node name="Label" parent="HBoxContainer2/Controls/Colors/VBoxContainer4" index="0"]
 text = "Color 4"
 
-[node name="colour" parent="CanvasLayer/HBoxContainer2/Controls/Colors/VBoxContainer4" index="1"]
+[node name="colour" parent="HBoxContainer2/Controls/Colors/VBoxContainer4" index="1"]
 color = Color(0.25, 0.25, 0.25, 1)
 
-[node name="VBoxContainer5" parent="CanvasLayer/HBoxContainer2/Controls/Colors" instance=ExtResource("2_6r0l5")]
+[node name="VBoxContainer5" parent="HBoxContainer2/Controls/Colors" instance=ExtResource("2_6r0l5")]
 layout_mode = 2
 
-[node name="Label" parent="CanvasLayer/HBoxContainer2/Controls/Colors/VBoxContainer5" index="0"]
+[node name="Label" parent="HBoxContainer2/Controls/Colors/VBoxContainer5" index="0"]
 text = "Color 5"
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/HBoxContainer2/Controls"]
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer2/Controls"]
 layout_mode = 2
 
-[node name="Apply" type="Button" parent="CanvasLayer/HBoxContainer2/Controls/VBoxContainer"]
+[node name="Apply" type="Button" parent="HBoxContainer2/Controls/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 6
 tooltip_text = "Refresh the changes manually."
 text = "Apply changes"
 
-[node name="RandomiseSlid" type="Button" parent="CanvasLayer/HBoxContainer2/Controls/VBoxContainer"]
+[node name="RandomiseSlid" type="Button" parent="HBoxContainer2/Controls/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 6
 tooltip_text = "Generate a random selection of noise values."
 text = "Randomize Sliders"
 
-[node name="RandomiseCol" type="Button" parent="CanvasLayer/HBoxContainer2/Controls/VBoxContainer"]
+[node name="RandomiseCol" type="Button" parent="HBoxContainer2/Controls/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 6
 tooltip_text = "Generate a random selection of colors."
 text = "Randomize Colors"
 
-[node name="Save" type="Button" parent="CanvasLayer/HBoxContainer2/Controls/VBoxContainer"]
+[node name="Save" type="Button" parent="HBoxContainer2/Controls/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 6
 tooltip_text = "Save the previewed image to a file location."
 text = "Save Image"
 
-[node name="FileDialog" type="FileDialog" parent="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/Save"]
+[node name="FileDialog" type="FileDialog" parent="HBoxContainer2/Controls/VBoxContainer/Save"]
 title = "Save your noise image"
 dialog_autowrap = true
 access = 2
 filters = PackedStringArray("*.png", "*.jpg")
 use_native_dialog = true
 
-[node name="CheckButton" type="CheckButton" parent="CanvasLayer/HBoxContainer2/Controls/VBoxContainer"]
+[node name="CheckButton" type="CheckButton" parent="HBoxContainer2/Controls/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 6
 tooltip_text = "This will generate random images to a directory."
 text = "Auto-Generate"
 
-[node name="FileDialog" type="FileDialog" parent="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/CheckButton"]
+[node name="FileDialog" type="FileDialog" parent="HBoxContainer2/Controls/VBoxContainer/CheckButton"]
 title = "Open a Directory"
 ok_button_text = "Select Current Folder"
 dialog_autowrap = true
@@ -447,7 +452,7 @@ access = 2
 filters = PackedStringArray("*.png", "*.jpg")
 use_native_dialog = true
 
-[node name="ConfirmationDialog" type="ConfirmationDialog" parent="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/CheckButton"]
+[node name="ConfirmationDialog" type="ConfirmationDialog" parent="HBoxContainer2/Controls/VBoxContainer/CheckButton"]
 transparent_bg = true
 title = "Confirm"
 position = Vector2i(-215, -70)
@@ -458,14 +463,12 @@ dialog_text = "Let process run in background?"
 dialog_autowrap = true
 cancel_button_text = "No"
 
-[node name="PopupMenu" type="PopupMenu" parent="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/CheckButton"]
+[node name="PopupMenu" type="PopupMenu" parent="HBoxContainer2/Controls/VBoxContainer/CheckButton"]
 title = "Choose maximum number of photos"
 initial_position = 1
 size = Vector2i(345, 244)
-visible = true
 borderless = false
 always_on_top = true
-force_native = true
 keep_title_visible = true
 item_count = 7
 item_0/text = "5"
@@ -483,45 +486,47 @@ item_5/id = 200
 item_6/text = "500"
 item_6/id = 500
 
-[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/HBoxContainer2/Controls/VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="HBoxContainer2/Controls/VBoxContainer"]
 visible = false
 layout_mode = 2
 size_flags_vertical = 6
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/HBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer2/Controls/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 0
 
-[node name="Label" type="Label" parent="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/HBoxContainer/VBoxContainer"]
+[node name="Label" type="Label" parent="HBoxContainer2/Controls/VBoxContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 text = "Generate every:"
 horizontal_alignment = 1
 vertical_alignment = 2
 
-[node name="OptionButton" type="OptionButton" parent="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/HBoxContainer/VBoxContainer"]
+[node name="OptionButton" type="OptionButton" parent="HBoxContainer2/Controls/VBoxContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 tooltip_text = "Duration between noise generations
 "
 selected = 1
-item_count = 8
-popup/item_0/text = "15 seconds"
-popup/item_0/id = 15
-popup/item_1/text = "1 min"
-popup/item_1/id = 60
-popup/item_2/text = "3 min"
-popup/item_2/id = 180
-popup/item_3/text = "5 min"
-popup/item_3/id = 300
-popup/item_4/text = "10 min"
-popup/item_4/id = 600
-popup/item_5/text = "30 min"
-popup/item_5/id = 1800
-popup/item_6/text = "1 hour"
-popup/item_6/id = 3600
-popup/item_7/text = "3 hours"
-popup/item_7/id = 10800
+item_count = 9
+popup/item_0/text = "Instant"
+popup/item_0/id = 0
+popup/item_1/text = "15 seconds"
+popup/item_1/id = 15
+popup/item_2/text = "1 min"
+popup/item_2/id = 60
+popup/item_3/text = "3 min"
+popup/item_3/id = 180
+popup/item_4/text = "5 min"
+popup/item_4/id = 300
+popup/item_5/text = "10 min"
+popup/item_5/id = 600
+popup/item_6/text = "30 min"
+popup/item_6/id = 1800
+popup/item_7/text = "1 hour"
+popup/item_7/id = 3600
+popup/item_8/text = "3 hours"
+popup/item_8/id = 10800
 
-[node name="TextureButton" type="TextureButton" parent="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/HBoxContainer"]
+[node name="TextureButton" type="TextureButton" parent="HBoxContainer2/Controls/VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(25, 25)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -534,46 +539,44 @@ texture_focused = ExtResource("5_i8ghl")
 ignore_texture_size = true
 stretch_mode = 5
 
-[node name="Timer" type="Timer" parent="."]
-
-[connection signal="text_changed" from="CanvasLayer/HBoxContainer2/Controls/Sliders/Seed/Seed" to="." method="_on_seed_text_changed"]
-[connection signal="text_submitted" from="CanvasLayer/HBoxContainer2/Controls/Sliders/Seed/Seed" to="." method="_on_seed_text_submitted"]
-[connection signal="item_selected" from="CanvasLayer/HBoxContainer2/Controls/Sliders/NoiseType/NoiseType" to="." method="_on_noise_type_pressed"]
-[connection signal="drag_ended" from="CanvasLayer/HBoxContainer2/Controls/Sliders/Frequency/Frequency" to="." method="_on_frequency_drag_ended"]
-[connection signal="value_changed" from="CanvasLayer/HBoxContainer2/Controls/Sliders/Frequency/Frequency" to="." method="_on_frequency_value_changed"]
-[connection signal="text_changed" from="CanvasLayer/HBoxContainer2/Controls/Sliders/Offset/HBoxContainer/X" to="." method="_on_x_text_changed"]
-[connection signal="text_submitted" from="CanvasLayer/HBoxContainer2/Controls/Sliders/Offset/HBoxContainer/X" to="." method="_on_x_text_submitted"]
-[connection signal="text_changed" from="CanvasLayer/HBoxContainer2/Controls/Sliders/Offset/HBoxContainer/Y" to="." method="_on_y_text_changed"]
-[connection signal="text_submitted" from="CanvasLayer/HBoxContainer2/Controls/Sliders/Offset/HBoxContainer/Y" to="." method="_on_y_text_submitted"]
-[connection signal="item_selected" from="CanvasLayer/HBoxContainer2/Controls/Sliders/FractalType/FractalType" to="." method="_on_fractal_type_pressed"]
-[connection signal="drag_ended" from="CanvasLayer/HBoxContainer2/Controls/Sliders/Fractal Octaves/Fractal Octaves" to="." method="_on_fractal_octaves_drag_ended"]
-[connection signal="value_changed" from="CanvasLayer/HBoxContainer2/Controls/Sliders/Fractal Octaves/Fractal Octaves" to="." method="_on_fractal_octaves_value_changed"]
-[connection signal="drag_ended" from="CanvasLayer/HBoxContainer2/Controls/Sliders/Fractal Gain/Fractal Gain" to="." method="_on_fractal_gain_drag_ended"]
-[connection signal="value_changed" from="CanvasLayer/HBoxContainer2/Controls/Sliders/Fractal Gain/Fractal Gain" to="." method="_on_fractal_gain_value_changed"]
-[connection signal="drag_ended" from="CanvasLayer/HBoxContainer2/Controls/Sliders/Fractal Lacunarity/Fractal Lacunarity" to="." method="_on_fractal_lacunarity_drag_ended"]
-[connection signal="value_changed" from="CanvasLayer/HBoxContainer2/Controls/Sliders/Fractal Lacunarity/Fractal Lacunarity" to="." method="_on_fractal_lacunarity_value_changed"]
-[connection signal="item_selected" from="CanvasLayer/HBoxContainer2/Controls/Sliders/CellularDistanceFunction/CellularDistFunc" to="." method="_on_cellular_dist_func_pressed"]
-[connection signal="drag_ended" from="CanvasLayer/HBoxContainer2/Controls/Sliders/CellularJitter/CellularJitter" to="." method="_on_cellular_jitter_drag_ended"]
-[connection signal="value_changed" from="CanvasLayer/HBoxContainer2/Controls/Sliders/CellularJitter/CellularJitter" to="." method="_on_cellular_jitter_value_changed"]
-[connection signal="item_selected" from="CanvasLayer/HBoxContainer2/Controls/Sliders/CellularRetType/CellularReturnType" to="." method="_on_cellular_return_type_pressed"]
-[connection signal="pressed" from="CanvasLayer/HBoxContainer2/Controls/Colors/AddColor" to="." method="_on_add_color_pressed"]
-[connection signal="pressed" from="CanvasLayer/HBoxContainer2/Controls/Colors/RemoveColor" to="." method="_on_remove_color_pressed"]
-[connection signal="pressed" from="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/Apply" to="." method="_on_apply_pressed"]
-[connection signal="pressed" from="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/RandomiseSlid" to="." method="_on_randomise_pressed"]
-[connection signal="pressed" from="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/RandomiseCol" to="." method="_on_randomise_col_pressed"]
-[connection signal="pressed" from="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/Save" to="." method="_on_save_pressed"]
-[connection signal="file_selected" from="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/Save/FileDialog" to="." method="_on_file_dialog_file_selected"]
-[connection signal="toggled" from="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/CheckButton" to="." method="_on_check_button_toggled"]
-[connection signal="dir_selected" from="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/CheckButton/FileDialog" to="." method="_on_file_dialog_dir_selected"]
-[connection signal="canceled" from="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/CheckButton/ConfirmationDialog" to="." method="_on_confirmation_dialog_canceled"]
-[connection signal="confirmed" from="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/CheckButton/ConfirmationDialog" to="." method="_on_confirmation_dialog_confirmed"]
-[connection signal="id_pressed" from="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/CheckButton/PopupMenu" to="." method="_on_popup_menu_id_pressed"]
-[connection signal="item_selected" from="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/HBoxContainer/VBoxContainer/OptionButton" to="." method="_on_option_button_item_selected"]
-[connection signal="pressed" from="CanvasLayer/HBoxContainer2/Controls/VBoxContainer/HBoxContainer/TextureButton" to="." method="_on_texture_button_pressed"]
 [connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]
+[connection signal="text_changed" from="HBoxContainer2/Controls/Sliders/Seed/Seed" to="." method="_on_seed_text_changed"]
+[connection signal="text_submitted" from="HBoxContainer2/Controls/Sliders/Seed/Seed" to="." method="_on_seed_text_submitted"]
+[connection signal="item_selected" from="HBoxContainer2/Controls/Sliders/NoiseType/NoiseType" to="." method="_on_noise_type_pressed"]
+[connection signal="drag_ended" from="HBoxContainer2/Controls/Sliders/Frequency/Frequency" to="." method="_on_frequency_drag_ended"]
+[connection signal="value_changed" from="HBoxContainer2/Controls/Sliders/Frequency/Frequency" to="." method="_on_frequency_value_changed"]
+[connection signal="text_changed" from="HBoxContainer2/Controls/Sliders/Offset/HBoxContainer/X" to="." method="_on_x_text_changed"]
+[connection signal="text_submitted" from="HBoxContainer2/Controls/Sliders/Offset/HBoxContainer/X" to="." method="_on_x_text_submitted"]
+[connection signal="text_changed" from="HBoxContainer2/Controls/Sliders/Offset/HBoxContainer/Y" to="." method="_on_y_text_changed"]
+[connection signal="text_submitted" from="HBoxContainer2/Controls/Sliders/Offset/HBoxContainer/Y" to="." method="_on_y_text_submitted"]
+[connection signal="item_selected" from="HBoxContainer2/Controls/Sliders/FractalType/FractalType" to="." method="_on_fractal_type_pressed"]
+[connection signal="drag_ended" from="HBoxContainer2/Controls/Sliders/Fractal Octaves/Fractal Octaves" to="." method="_on_fractal_octaves_drag_ended"]
+[connection signal="value_changed" from="HBoxContainer2/Controls/Sliders/Fractal Octaves/Fractal Octaves" to="." method="_on_fractal_octaves_value_changed"]
+[connection signal="drag_ended" from="HBoxContainer2/Controls/Sliders/Fractal Gain/Fractal Gain" to="." method="_on_fractal_gain_drag_ended"]
+[connection signal="value_changed" from="HBoxContainer2/Controls/Sliders/Fractal Gain/Fractal Gain" to="." method="_on_fractal_gain_value_changed"]
+[connection signal="drag_ended" from="HBoxContainer2/Controls/Sliders/Fractal Lacunarity/Fractal Lacunarity" to="." method="_on_fractal_lacunarity_drag_ended"]
+[connection signal="value_changed" from="HBoxContainer2/Controls/Sliders/Fractal Lacunarity/Fractal Lacunarity" to="." method="_on_fractal_lacunarity_value_changed"]
+[connection signal="item_selected" from="HBoxContainer2/Controls/Sliders/CellularDistanceFunction/CellularDistFunc" to="." method="_on_cellular_dist_func_pressed"]
+[connection signal="drag_ended" from="HBoxContainer2/Controls/Sliders/CellularJitter/CellularJitter" to="." method="_on_cellular_jitter_drag_ended"]
+[connection signal="value_changed" from="HBoxContainer2/Controls/Sliders/CellularJitter/CellularJitter" to="." method="_on_cellular_jitter_value_changed"]
+[connection signal="item_selected" from="HBoxContainer2/Controls/Sliders/CellularRetType/CellularReturnType" to="." method="_on_cellular_return_type_pressed"]
+[connection signal="pressed" from="HBoxContainer2/Controls/Colors/AddColor" to="." method="_on_add_color_pressed"]
+[connection signal="pressed" from="HBoxContainer2/Controls/Colors/RemoveColor" to="." method="_on_remove_color_pressed"]
+[connection signal="pressed" from="HBoxContainer2/Controls/VBoxContainer/Apply" to="." method="_on_apply_pressed"]
+[connection signal="pressed" from="HBoxContainer2/Controls/VBoxContainer/RandomiseSlid" to="." method="_on_randomise_pressed"]
+[connection signal="pressed" from="HBoxContainer2/Controls/VBoxContainer/RandomiseCol" to="." method="_on_randomise_col_pressed"]
+[connection signal="pressed" from="HBoxContainer2/Controls/VBoxContainer/Save" to="." method="_on_save_pressed"]
+[connection signal="file_selected" from="HBoxContainer2/Controls/VBoxContainer/Save/FileDialog" to="." method="_on_file_dialog_file_selected"]
+[connection signal="toggled" from="HBoxContainer2/Controls/VBoxContainer/CheckButton" to="." method="_on_check_button_toggled"]
+[connection signal="dir_selected" from="HBoxContainer2/Controls/VBoxContainer/CheckButton/FileDialog" to="." method="_on_file_dialog_dir_selected"]
+[connection signal="canceled" from="HBoxContainer2/Controls/VBoxContainer/CheckButton/ConfirmationDialog" to="." method="_on_confirmation_dialog_canceled"]
+[connection signal="confirmed" from="HBoxContainer2/Controls/VBoxContainer/CheckButton/ConfirmationDialog" to="." method="_on_confirmation_dialog_confirmed"]
+[connection signal="id_pressed" from="HBoxContainer2/Controls/VBoxContainer/CheckButton/PopupMenu" to="." method="_on_popup_menu_id_pressed"]
+[connection signal="item_selected" from="HBoxContainer2/Controls/VBoxContainer/HBoxContainer/VBoxContainer/OptionButton" to="." method="_on_option_button_item_selected"]
+[connection signal="pressed" from="HBoxContainer2/Controls/VBoxContainer/HBoxContainer/TextureButton" to="." method="_on_texture_button_pressed"]
 
-[editable path="CanvasLayer/HBoxContainer2/Controls/Colors/VBoxContainer"]
-[editable path="CanvasLayer/HBoxContainer2/Controls/Colors/VBoxContainer2"]
-[editable path="CanvasLayer/HBoxContainer2/Controls/Colors/VBoxContainer3"]
-[editable path="CanvasLayer/HBoxContainer2/Controls/Colors/VBoxContainer4"]
-[editable path="CanvasLayer/HBoxContainer2/Controls/Colors/VBoxContainer5"]
+[editable path="HBoxContainer2/Controls/Colors/VBoxContainer"]
+[editable path="HBoxContainer2/Controls/Colors/VBoxContainer2"]
+[editable path="HBoxContainer2/Controls/Colors/VBoxContainer3"]
+[editable path="HBoxContainer2/Controls/Colors/VBoxContainer4"]
+[editable path="HBoxContainer2/Controls/Colors/VBoxContainer5"]
