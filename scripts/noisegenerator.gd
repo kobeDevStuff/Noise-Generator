@@ -43,6 +43,7 @@ var _current_input_tex_rid: RID = RID()
 var _current_output_tex_rid: RID = RID()
 var _current_color_buffer_rid: RID = RID()
 var _current_uniform_set_rid: RID = RID()
+var _current_parameter_buffer_rid: RID = RID()
 
 var _format: RDTextureFormat
 var _view: RDTextureView
@@ -65,6 +66,8 @@ var _rid_free_queue: Array[RID] = []
 @onready var _cellular_jitter: HSlider = $HBoxContainer2/Controls/Sliders/CellularJitter/CellularJitter
 #endregion
 #region Noise controls
+## Whether the noise values are linearly interpolated or banded
+@export var gradient: bool = false
 ## The random number seed for all noise types.
 @export var noise_seed: int = 0
 
@@ -197,42 +200,61 @@ func _ready():
 	refresh_image() # Initial refresh
 
 func _process(_delta):
+	if _rd == null:
+		return
+
 	if not _rid_free_queue.is_empty():
-		# Iterate in reverse to safely remove elements while iterating
-		for i in range(_rid_free_queue.size() - 1, -1, -1): # Corrected: goes down to -1 (includes 0)
-			var rid_to_free = _rid_free_queue[i]
-			if rid_to_free.is_valid():
-				_rd.free_rid(rid_to_free)
-			_rid_free_queue.remove_at(i) # Always remove, whether freed successfully or already invalid
+		# Create a copy to avoid mutation during iteration
+		var rids_to_free = _rid_free_queue.duplicate()
+		_rid_free_queue.clear()
+		for rid in rids_to_free:
+			if rid.is_valid():
+				_rd.free_rid(rid)
+			# No else log spam; safe to ignore already-invalid RIDs
+
 
 func _exit_tree():
-	set_process(false) # Stop _process before cleanup
+	set_process(false)
 
-	# Ensure anything in the queue is also freed on exit
 	if _rd != null:
-		for rid_to_free in _rid_free_queue:
-			if rid_to_free.is_valid():
-				_rd.free_rid(rid_to_free)
-		_rid_free_queue.clear()
+		# Queue all currently held RIDs for deferred freeing
+		safe_queue_free(_current_input_tex_rid)
+		_current_input_tex_rid = RID()
+		safe_queue_free(_current_output_tex_rid)
+		_current_output_tex_rid = RID()
+		safe_queue_free(_current_color_buffer_rid)
+		_current_color_buffer_rid = RID()
+		safe_queue_free(_current_uniform_set_rid)
+		_current_uniform_set_rid = RID()
+		safe_queue_free(_current_parameter_buffer_rid)
+		_current_parameter_buffer_rid = RID()
 
-		# Free the current RIDs that were not yet queued (or are the very last ones)
-		if _current_uniform_set_rid.is_valid():
-			_rd.free_rid(_current_uniform_set_rid)
-		if _current_input_tex_rid.is_valid():
-			_rd.free_rid(_current_input_tex_rid)
-		if _current_output_tex_rid.is_valid():
-			_rd.free_rid(_current_output_tex_rid)
-		if _current_color_buffer_rid.is_valid():
-			_rd.free_rid(_current_color_buffer_rid)
-		
+		# Free pipeline and shader immediately if valid
 		if _pipeline.is_valid():
 			_rd.free_rid(_pipeline)
+			_pipeline = RID()
 		if _shader.is_valid():
 			_rd.free_rid(_shader)
-		
+			_shader = RID()
+
+		# Process any queued frees
+		for rid in _rid_free_queue:
+			if rid.is_valid():
+				_rd.free_rid(rid)
+		_rid_free_queue.clear()
+
+		# Free the RenderingDevice last
 		_rd.free()
 		_rd = null
 #endregion
+func queue_rid_for_free(rid: RID) -> void:
+	# Call this safely in refresh_image when replacing RIDs
+	if rid.is_valid() and not _rid_free_queue.has(rid):
+		_rid_free_queue.append(rid)
+
+func safe_queue_free(rid: RID):
+	if rid.is_valid() and not _rid_free_queue.has(rid):
+		_rid_free_queue.append(rid)
 
 func add_color() -> void:
 	var color_picker: NoiseColorPicker = COLOR_PICKER.instantiate()
@@ -260,13 +282,15 @@ func refresh_image(dimensions: Vector2 = PREVIEW_RESOLUTION) -> ImageTexture:
 		push_error("RenderingDevice not initialized. Cannot refresh image.")
 		return null
 
+	# Update texture format dimensions
 	_format.width = int(dimensions.x)
 	_format.height = int(dimensions.y)
 
+	# Generate noise image
 	var fnl := FastNoiseLite.new()
 	fnl.seed = noise_seed
 	fnl.noise_type = noise_type
-	fnl.frequency = frequency * (PREVIEW_RESOLUTION.y/dimensions.y) # Fit height
+	fnl.frequency = frequency * (PREVIEW_RESOLUTION.y / dimensions.y)
 	fnl.fractal_type = fractal_type
 	fnl.fractal_octaves = fractal_octaves
 	fnl.fractal_gain = fractal_gain
@@ -276,24 +300,22 @@ func refresh_image(dimensions: Vector2 = PREVIEW_RESOLUTION) -> ImageTexture:
 	fnl.cellular_jitter = cellular_jitter
 	fnl.cellular_return_type = cellular_return_type
 
-	var noise_image = fnl.get_image(int(dimensions.x), int(dimensions.y))
+	var noise_image: Image = fnl.get_image(_format.width, _format.height)
 	noise_image.convert(Image.FORMAT_RGBA8)
 	var image_bytes: PackedByteArray = noise_image.get_data()
 
-	# === Queue old RIDs for deferred freeing before creating new ones ===
-	if _current_input_tex_rid.is_valid():
-		_rid_free_queue.append(_current_input_tex_rid)
-	if _current_output_tex_rid.is_valid():
-		_rid_free_queue.append(_current_output_tex_rid)
-	if _current_color_buffer_rid.is_valid():
-		_rid_free_queue.append(_current_color_buffer_rid)
-	if _current_uniform_set_rid.is_valid():
-		_rid_free_queue.append(_current_uniform_set_rid)
+	# Queue old resources for freeing
+	queue_rid_for_free(_current_input_tex_rid)
+	queue_rid_for_free(_current_output_tex_rid)
+	queue_rid_for_free(_current_color_buffer_rid)
+	queue_rid_for_free(_current_parameter_buffer_rid)
+	queue_rid_for_free(_current_uniform_set_rid)
 
-	# --- Create NEW RIDs ---
+	# Create new input/output textures
 	_current_input_tex_rid = _rd.texture_create(_format, _view, [image_bytes])
 	_current_output_tex_rid = _rd.texture_create(_format, _view)
 
+	# Create colour buffer
 	var color_bytes := PackedByteArray()
 	for c in colors:
 		color_bytes += float_to_bytes(c.r)
@@ -302,7 +324,12 @@ func refresh_image(dimensions: Vector2 = PREVIEW_RESOLUTION) -> ImageTexture:
 		color_bytes += float_to_bytes(c.a)
 	_current_color_buffer_rid = _rd.storage_buffer_create(color_bytes.size(), color_bytes)
 
-	# === Create uniform set ===
+	# Create parameter buffer
+	var params := PackedByteArray()
+	params.append(int(gradient)) # gradient flag as int
+	_current_parameter_buffer_rid = _rd.storage_buffer_create(params.size(), params)
+
+	# Create uniform set
 	var uniform_input := RDUniform.new()
 	uniform_input.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
 	uniform_input.binding = 0
@@ -318,12 +345,22 @@ func refresh_image(dimensions: Vector2 = PREVIEW_RESOLUTION) -> ImageTexture:
 	uniform_colors.binding = 2
 	uniform_colors.add_id(_current_color_buffer_rid)
 
-	_current_uniform_set_rid = _rd.uniform_set_create([uniform_input, uniform_output, uniform_colors], _shader, 0)
+	var parameters := RDUniform.new()
+	parameters.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	parameters.binding = 3
+	parameters.add_id(_current_parameter_buffer_rid)
+
+	_current_uniform_set_rid = _rd.uniform_set_create(
+		[uniform_input, uniform_output, uniform_colors, parameters],
+		_shader,
+		0
+	)
+
 	if not _current_uniform_set_rid.is_valid():
 		push_error("Failed to create uniform set RID!")
 		return null
 
-	# === Dispatch compute shader ===
+	# Dispatch compute pass
 	var compute_list = _rd.compute_list_begin()
 	_rd.compute_list_bind_compute_pipeline(compute_list, _pipeline)
 	_rd.compute_list_bind_uniform_set(compute_list, _current_uniform_set_rid, 0)
@@ -335,12 +372,12 @@ func refresh_image(dimensions: Vector2 = PREVIEW_RESOLUTION) -> ImageTexture:
 	_rd.submit()
 	_rd.sync()
 
-	# === Retrieve final image ===
+	# Retrieve result image
 	var packed_bytes = _rd.texture_get_data(_current_output_tex_rid, 0)
-	var final_image = Image.create_from_data(int(dimensions.x), int(dimensions.y), false, Image.FORMAT_RGBA8, packed_bytes)
+	var final_image = Image.create_from_data(_format.width, _format.height, false, Image.FORMAT_RGBA8, packed_bytes)
 	var img_texture = ImageTexture.create_from_image(final_image)
 
-	if dimensions == Vector2(512, 512):
+	if dimensions == PREVIEW_RESOLUTION:
 		img.texture = img_texture
 
 	return img_texture
@@ -379,7 +416,7 @@ func randomise_colors() -> void:
 	var color_pickers := color_container.get_children()
 	for i in range(colors.size() - 1, -1, -1):
 		colors[i] = Color(rand.randf(), rand.randf(), rand.randf())
-		color_pickers[i+3].get_child(1).color = colors[i]
+		color_pickers[i+4].get_child(1).color = colors[i]
 	refresh_image()
 
 func update_sliders() -> void:
@@ -396,7 +433,7 @@ func update_sliders() -> void:
 	_cellular_dist_func.selected = cellular_distance_function
 	_cellular_return_type.selected = cellular_return_type
 
-func start_timer(time: int) -> void:
+func start_timer(time: float) -> void:
 	if time >= 0:
 		timer.start(time + 0.01)
 
@@ -641,5 +678,9 @@ func _on_image_y_text_changed(new_text: String) -> void:
 		var i := new_text.to_int()
 		if i > 0 and i < 4096:
 			target_resolution.x = new_text.to_int()
+
+func _on_gradient_button_toggled(toggled_on: bool) -> void:
+	gradient = toggled_on
+	refresh_image()
 
 #endregion

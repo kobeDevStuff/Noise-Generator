@@ -153,6 +153,7 @@ size_flags_horizontal = 3
 tooltip_text = "Translate the noise input coordinates by the given Vector3."
 placeholder_text = "x"
 alignment = 1
+max_length = 4
 
 [node name="Y" type="LineEdit" parent="HBoxContainer2/Controls/Sliders/Offset/HBoxContainer"]
 layout_mode = 2
@@ -160,6 +161,7 @@ size_flags_horizontal = 3
 tooltip_text = "Translate the noise input coordinates by the given Vector3."
 placeholder_text = "y"
 alignment = 1
+max_length = 4
 
 [node name="FractalType" type="VBoxContainer" parent="HBoxContainer2/Controls/Sliders"]
 layout_mode = 2
@@ -361,6 +363,11 @@ size_flags_horizontal = 4
 size_flags_vertical = 0
 tooltip_text = "Remove a color from the palette."
 text = "Remove color"
+
+[node name="CheckButton" type="CheckButton" parent="HBoxContainer2/Controls/Colors"]
+layout_mode = 2
+tooltip_text = "Whether the noise values are linearly interpolated or banded"
+text = "Gradient"
 
 [node name="HSeparator" type="HSeparator" parent="HBoxContainer2/Controls/Colors"]
 layout_mode = 2
@@ -611,6 +618,7 @@ expand_icon = true
 [connection signal="item_selected" from="HBoxContainer2/Controls/Sliders/CellularRetType/CellularReturnType" to="." method="_on_cellular_return_type_pressed"]
 [connection signal="pressed" from="HBoxContainer2/Controls/Colors/AddColor" to="." method="_on_add_color_pressed"]
 [connection signal="pressed" from="HBoxContainer2/Controls/Colors/RemoveColor" to="." method="_on_remove_color_pressed"]
+[connection signal="toggled" from="HBoxContainer2/Controls/Colors/CheckButton" to="." method="_on_gradient_button_toggled"]
 [connection signal="pressed" from="HBoxContainer2/Controls/VBoxContainer/Apply" to="." method="_on_apply_pressed"]
 [connection signal="pressed" from="HBoxContainer2/Controls/VBoxContainer/RandomiseSlid" to="." method="_on_randomise_pressed"]
 [connection signal="pressed" from="HBoxContainer2/Controls/VBoxContainer/RandomiseCol" to="." method="_on_randomise_col_pressed"]
