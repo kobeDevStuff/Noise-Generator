@@ -32,17 +32,16 @@ theme = ExtResource("2_4egp4")
 theme_override_constants/separation = 24
 
 [node name="NoisePreview" type="PanelContainer" parent="HBoxContainer2"]
-custom_minimum_size = Vector2(512, 512)
 layout_mode = 2
 size_flags_horizontal = 6
 size_flags_vertical = 4
 tooltip_text = "Preview"
 
 [node name="img" type="TextureRect" parent="HBoxContainer2/NoisePreview"]
+custom_minimum_size = Vector2(24, 24)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
-expand_mode = 1
 stretch_mode = 3
 
 [node name="Controls" type="HBoxContainer" parent="HBoxContainer2"]
@@ -125,7 +124,7 @@ vertical_alignment = 2
 layout_mode = 2
 size_flags_vertical = 2
 tooltip_text = "The frequency for all noise types. Low frequency results in smooth noise while high frequency results in rougher, more granular noise."
-max_value = 0.1
+max_value = 1.0
 step = 0.0
 value = 0.05
 
@@ -150,7 +149,7 @@ layout_mode = 2
 [node name="X" type="LineEdit" parent="HBoxContainer2/Controls/Sliders/Offset/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-tooltip_text = "Translate the noise input coordinates by the given Vector3."
+tooltip_text = "Translate the noise input coordinates by the given (x, y) coordinates."
 placeholder_text = "x"
 alignment = 1
 max_length = 4
@@ -158,7 +157,7 @@ max_length = 4
 [node name="Y" type="LineEdit" parent="HBoxContainer2/Controls/Sliders/Offset/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-tooltip_text = "Translate the noise input coordinates by the given Vector3."
+tooltip_text = "Translate the noise input coordinates by the given (x, y) coordinates."
 placeholder_text = "y"
 alignment = 1
 max_length = 4
@@ -364,9 +363,9 @@ size_flags_vertical = 0
 tooltip_text = "Remove a color from the palette."
 text = "Remove color"
 
-[node name="CheckButton" type="CheckButton" parent="HBoxContainer2/Controls/Colors"]
+[node name="gradient" type="CheckButton" parent="HBoxContainer2/Controls/Colors"]
 layout_mode = 2
-tooltip_text = "Whether the noise values are linearly interpolated or banded"
+tooltip_text = "Whether or not the image has a smooth look with interpolated colors or sharper look with discrete color banding."
 text = "Gradient"
 
 [node name="HSeparator" type="HSeparator" parent="HBoxContainer2/Controls/Colors"]
@@ -466,18 +465,24 @@ size_flags_vertical = 2
 [node name="imageX" type="LineEdit" parent="HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2"]
 layout_mode = 2
 size_flags_horizontal = 3
-tooltip_text = "Translate the noise input coordinates by the given Vector3."
+tooltip_text = "The desired output resolution of your image"
 text = "1024"
 placeholder_text = "x"
 alignment = 1
+max_length = 4
+
+[node name="Label" type="Label" parent="HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+text = "x"
 
 [node name="imageY" type="LineEdit" parent="HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2"]
 layout_mode = 2
 size_flags_horizontal = 3
-tooltip_text = "Translate the noise input coordinates by the given Vector3."
+tooltip_text = "The desired output resolution of your image"
 text = "1024"
 placeholder_text = "y"
 alignment = 1
+max_length = 4
 
 [node name="CheckButton" type="CheckButton" parent="HBoxContainer2/Controls/VBoxContainer"]
 layout_mode = 2
@@ -618,7 +623,7 @@ expand_icon = true
 [connection signal="item_selected" from="HBoxContainer2/Controls/Sliders/CellularRetType/CellularReturnType" to="." method="_on_cellular_return_type_pressed"]
 [connection signal="pressed" from="HBoxContainer2/Controls/Colors/AddColor" to="." method="_on_add_color_pressed"]
 [connection signal="pressed" from="HBoxContainer2/Controls/Colors/RemoveColor" to="." method="_on_remove_color_pressed"]
-[connection signal="toggled" from="HBoxContainer2/Controls/Colors/CheckButton" to="." method="_on_gradient_button_toggled"]
+[connection signal="toggled" from="HBoxContainer2/Controls/Colors/gradient" to="." method="_on_gradient_button_toggled"]
 [connection signal="pressed" from="HBoxContainer2/Controls/VBoxContainer/Apply" to="." method="_on_apply_pressed"]
 [connection signal="pressed" from="HBoxContainer2/Controls/VBoxContainer/RandomiseSlid" to="." method="_on_randomise_pressed"]
 [connection signal="pressed" from="HBoxContainer2/Controls/VBoxContainer/RandomiseCol" to="." method="_on_randomise_col_pressed"]

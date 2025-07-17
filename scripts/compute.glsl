@@ -12,7 +12,7 @@ layout(set = 0, binding = 2, std430) buffer Colors {
     vec4 colors[];
 };
 layout(set = 0, binding = 3, std430) buffer ParamsBuffer {
-    int use_gradient;
+    int params[];
 };
 
 void main() {
@@ -24,8 +24,9 @@ void main() {
     float value = clamp(pixel.r, 0.0, 1.0);
 
     vec4 out_color;
+    int gradient_mode = params[0] & 1;
 
-    if (use_gradient == 1) {
+    if (gradient_mode == 1) {
         float scaled = value * float(colors.length());
         int index = int(floor(scaled));
         int next_index = min(index + 1, colors.length() - 1);

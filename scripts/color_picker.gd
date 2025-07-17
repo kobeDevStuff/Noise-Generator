@@ -2,7 +2,7 @@ extends VBoxContainer
 class_name NoiseColorPicker
 
 var color: Color = Color.BLACK
-@onready var id: int = get_index() - 3
+@onready var id: int = get_index() - 4
 
 func _on_colour_color_changed(col: Color) -> void:
 	color = col

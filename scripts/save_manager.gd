@@ -1,7 +1,7 @@
 extends Node
 
 const save_file_name: String = "user://prefs.json" # You can change this to be whatever you want (save_game.txt, game.save etc.), just don't change the 'user://' at the front
-const default_dictionary: Dictionary = {"save-file": "", "auto-save-file": "", "auto-save-time": -1.0, "max-photo-limit": 50}
+const default_dictionary: Dictionary = {"save-file": "", "auto-save-file": "", "auto-save-time": -1, "max-photo-limit": 50, "output-resolution": Vector2i(1024, 1024)}
 
 ## Stores data to a save file to be loaded from later
 func save_prefs(data: Dictionary) -> void:

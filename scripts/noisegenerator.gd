@@ -12,11 +12,14 @@ var colors: Array[Color] = [
 	Color(0.0, 0.0, 0.0)
 ]
 
-const PREVIEW_RESOLUTION: Vector2 = Vector2(512, 512)
-@export var target_resolution: Vector2 = Vector2(3413, 1920) #1.333333333333 * DisplayServer.screen_get_size(DisplayServer.window_get_current_screen()) Dynamic way
+const PREVIEW_SF: int = 4
+const MIN_RES: Vector2i = Vector2i(1,1)
+const MAX_RES: Vector2i = Vector2i(4096, 4096)
+
+@export var target_resolution: Vector2i = Vector2(1024, 1024)
 @export var file_path: String
 @export var auto_file_path: String
-var auto_time: float
+var auto_time: int
 var max_photo_limit: int
 var background: bool = false
 var auto_save_num: int
@@ -32,6 +35,9 @@ const COLOR_PICKER = preload("res://scenes/color picker.tscn")
 @onready var file_dialog: FileDialog = $HBoxContainer2/Controls/VBoxContainer/CheckButton/FileDialog
 @onready var confirmation_dialog: ConfirmationDialog = $HBoxContainer2/Controls/VBoxContainer/CheckButton/ConfirmationDialog
 @onready var popup_menu: PopupMenu = $HBoxContainer2/Controls/VBoxContainer/CheckButton/PopupMenu
+@onready var gradient_button: CheckButton = $HBoxContainer2/Controls/Colors/gradient
+@onready var image_x: LineEdit = $HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2/imageX
+@onready var image_y: LineEdit = $HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2/imageY
 
 #region rendering
 var _rd: RenderingDevice = null
@@ -43,13 +49,10 @@ var _current_input_tex_rid: RID = RID()
 var _current_output_tex_rid: RID = RID()
 var _current_color_buffer_rid: RID = RID()
 var _current_uniform_set_rid: RID = RID()
-var _current_parameter_buffer_rid: RID = RID()
+var _current_param_buffer_rid: RID = RID()
 
 var _format: RDTextureFormat
 var _view: RDTextureView
-
-# Queue for RIDs to be freed in a later frame
-var _rid_free_queue: Array[RID] = []
 #endregion
 #region Sliders
 @onready var _seed: LineEdit = $HBoxContainer2/Controls/Sliders/Seed/Seed
@@ -66,7 +69,7 @@ var _rid_free_queue: Array[RID] = []
 @onready var _cellular_jitter: HSlider = $HBoxContainer2/Controls/Sliders/CellularJitter/CellularJitter
 #endregion
 #region Noise controls
-## Whether the noise values are linearly interpolated or banded
+## Whether or not the image has a smooth look with interpolated colors or sharper look with discrete color banding
 @export var gradient: bool = false
 ## The random number seed for all noise types.
 @export var noise_seed: int = 0
@@ -154,13 +157,20 @@ func _ready():
 	
 	get_window().close_requested.connect(_on_window_closed)
 	#endregion
-
 	var save: Dictionary = SaveManager.load_prefs()
 	auto_file_path = save["auto-save-file"]
 	file_path = save["save-file"]
 	auto_time = save["auto-save-time"]
 	max_photo_limit = save["max-photo-limit"]
-	
+	var new_string: String = save["output-resolution"]
+	new_string = new_string.erase(0, 1)
+	new_string = new_string.erase(new_string.length() - 1, 1)
+	var array: Array = new_string.split(", ")
+	target_resolution = Vector2i(int(array[0]), int(array[1]))
+
+	$HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2/imageX.text = str(target_resolution.x)
+	$HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2/imageY.text = str(target_resolution.y)
+
 	if auto_time >= 0:
 		option_button.selected = option_button.get_item_index(auto_time)
 	
@@ -199,62 +209,31 @@ func _ready():
 	set_process(true) # Start processing for the free queue
 	refresh_image() # Initial refresh
 
-func _process(_delta):
-	if _rd == null:
-		return
-
-	if not _rid_free_queue.is_empty():
-		# Create a copy to avoid mutation during iteration
-		var rids_to_free = _rid_free_queue.duplicate()
-		_rid_free_queue.clear()
-		for rid in rids_to_free:
-			if rid.is_valid():
-				_rd.free_rid(rid)
-			# No else log spam; safe to ignore already-invalid RIDs
-
 
 func _exit_tree():
-	set_process(false)
+	set_process(false) # Stop _process before cleanup
 
 	if _rd != null:
-		# Queue all currently held RIDs for deferred freeing
-		safe_queue_free(_current_input_tex_rid)
-		_current_input_tex_rid = RID()
-		safe_queue_free(_current_output_tex_rid)
-		_current_output_tex_rid = RID()
-		safe_queue_free(_current_color_buffer_rid)
-		_current_color_buffer_rid = RID()
-		safe_queue_free(_current_uniform_set_rid)
-		_current_uniform_set_rid = RID()
-		safe_queue_free(_current_parameter_buffer_rid)
-		_current_parameter_buffer_rid = RID()
-
-		# Free pipeline and shader immediately if valid
+		# Free the current RIDs that were not yet queued (or are the very last ones)
+		if _current_uniform_set_rid.is_valid():
+			_rd.free_rid(_current_uniform_set_rid)
+		if _current_input_tex_rid.is_valid():
+			_rd.free_rid(_current_input_tex_rid)
+		if _current_output_tex_rid.is_valid():
+			_rd.free_rid(_current_output_tex_rid)
+		if _current_color_buffer_rid.is_valid():
+			_rd.free_rid(_current_color_buffer_rid)
+		if _current_param_buffer_rid.is_valid():
+			_rd.free_rid(_current_param_buffer_rid)
+		
 		if _pipeline.is_valid():
 			_rd.free_rid(_pipeline)
-			_pipeline = RID()
 		if _shader.is_valid():
 			_rd.free_rid(_shader)
-			_shader = RID()
-
-		# Process any queued frees
-		for rid in _rid_free_queue:
-			if rid.is_valid():
-				_rd.free_rid(rid)
-		_rid_free_queue.clear()
-
-		# Free the RenderingDevice last
+		
 		_rd.free()
 		_rd = null
 #endregion
-func queue_rid_for_free(rid: RID) -> void:
-	# Call this safely in refresh_image when replacing RIDs
-	if rid.is_valid() and not _rid_free_queue.has(rid):
-		_rid_free_queue.append(rid)
-
-func safe_queue_free(rid: RID):
-	if rid.is_valid() and not _rid_free_queue.has(rid):
-		_rid_free_queue.append(rid)
 
 func add_color() -> void:
 	var color_picker: NoiseColorPicker = COLOR_PICKER.instantiate()
@@ -277,20 +256,20 @@ func update_color(new_col: Color, id: int) -> void:
 	colors[id] = new_col
 	refresh_image()
 
-func refresh_image(dimensions: Vector2 = PREVIEW_RESOLUTION) -> ImageTexture:
+func refresh_image(dimensions: Vector2i = target_resolution/PREVIEW_SF) -> ImageTexture:
 	if _rd == null:
 		push_error("RenderingDevice not initialized. Cannot refresh image.")
 		return null
-
-	# Update texture format dimensions
+	
+	dimensions.x = clamp(dimensions.x, MIN_RES.x, MAX_RES.x)
+	dimensions.y = clamp(dimensions.y, MIN_RES.y, MAX_RES.y)
 	_format.width = int(dimensions.x)
 	_format.height = int(dimensions.y)
 
-	# Generate noise image
 	var fnl := FastNoiseLite.new()
 	fnl.seed = noise_seed
 	fnl.noise_type = noise_type
-	fnl.frequency = frequency * (PREVIEW_RESOLUTION.y / dimensions.y)
+	fnl.frequency = frequency / PREVIEW_SF
 	fnl.fractal_type = fractal_type
 	fnl.fractal_octaves = fractal_octaves
 	fnl.fractal_gain = fractal_gain
@@ -300,22 +279,24 @@ func refresh_image(dimensions: Vector2 = PREVIEW_RESOLUTION) -> ImageTexture:
 	fnl.cellular_jitter = cellular_jitter
 	fnl.cellular_return_type = cellular_return_type
 
-	var noise_image: Image = fnl.get_image(_format.width, _format.height)
+	var noise_image = fnl.get_image(int(dimensions.x), int(dimensions.y))
 	noise_image.convert(Image.FORMAT_RGBA8)
 	var image_bytes: PackedByteArray = noise_image.get_data()
 
-	# Queue old resources for freeing
-	queue_rid_for_free(_current_input_tex_rid)
-	queue_rid_for_free(_current_output_tex_rid)
-	queue_rid_for_free(_current_color_buffer_rid)
-	queue_rid_for_free(_current_parameter_buffer_rid)
-	queue_rid_for_free(_current_uniform_set_rid)
+	# === Queue old RIDs for deferred freeing before creating new ones ===
+	if _current_input_tex_rid.is_valid():
+		_rd.free_rid(_current_input_tex_rid)
+	if _current_output_tex_rid.is_valid():
+		_rd.free_rid(_current_output_tex_rid)
+	if _current_color_buffer_rid.is_valid():
+		_rd.free_rid(_current_color_buffer_rid)
+	if _current_uniform_set_rid.is_valid():
+		RID()
 
-	# Create new input/output textures
+	# --- Create NEW RIDs ---
 	_current_input_tex_rid = _rd.texture_create(_format, _view, [image_bytes])
 	_current_output_tex_rid = _rd.texture_create(_format, _view)
 
-	# Create colour buffer
 	var color_bytes := PackedByteArray()
 	for c in colors:
 		color_bytes += float_to_bytes(c.r)
@@ -323,13 +304,13 @@ func refresh_image(dimensions: Vector2 = PREVIEW_RESOLUTION) -> ImageTexture:
 		color_bytes += float_to_bytes(c.b)
 		color_bytes += float_to_bytes(c.a)
 	_current_color_buffer_rid = _rd.storage_buffer_create(color_bytes.size(), color_bytes)
-
-	# Create parameter buffer
+	
 	var params := PackedByteArray()
-	params.append(int(gradient)) # gradient flag as int
-	_current_parameter_buffer_rid = _rd.storage_buffer_create(params.size(), params)
+	params.resize(4)
+	params.encode_s32(0, int(gradient))
 
-	# Create uniform set
+	_current_param_buffer_rid = _rd.storage_buffer_create(params.size(), params)
+	# === Create uniform set ===
 	var uniform_input := RDUniform.new()
 	uniform_input.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
 	uniform_input.binding = 0
@@ -344,23 +325,18 @@ func refresh_image(dimensions: Vector2 = PREVIEW_RESOLUTION) -> ImageTexture:
 	uniform_colors.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
 	uniform_colors.binding = 2
 	uniform_colors.add_id(_current_color_buffer_rid)
-
-	var parameters := RDUniform.new()
-	parameters.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
-	parameters.binding = 3
-	parameters.add_id(_current_parameter_buffer_rid)
-
-	_current_uniform_set_rid = _rd.uniform_set_create(
-		[uniform_input, uniform_output, uniform_colors, parameters],
-		_shader,
-		0
-	)
-
+	
+	var uniform_param := RDUniform.new()
+	uniform_param.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	uniform_param.binding = 3
+	uniform_param.add_id(_current_param_buffer_rid)
+	
+	_current_uniform_set_rid = _rd.uniform_set_create([uniform_input, uniform_output, uniform_colors, uniform_param], _shader, 0)
 	if not _current_uniform_set_rid.is_valid():
 		push_error("Failed to create uniform set RID!")
 		return null
 
-	# Dispatch compute pass
+	# === Dispatch compute shader ===
 	var compute_list = _rd.compute_list_begin()
 	_rd.compute_list_bind_compute_pipeline(compute_list, _pipeline)
 	_rd.compute_list_bind_uniform_set(compute_list, _current_uniform_set_rid, 0)
@@ -372,12 +348,15 @@ func refresh_image(dimensions: Vector2 = PREVIEW_RESOLUTION) -> ImageTexture:
 	_rd.submit()
 	_rd.sync()
 
-	# Retrieve result image
+	# === Retrieve final image ===
 	var packed_bytes = _rd.texture_get_data(_current_output_tex_rid, 0)
-	var final_image = Image.create_from_data(_format.width, _format.height, false, Image.FORMAT_RGBA8, packed_bytes)
+	var final_image = Image.create_from_data(int(dimensions.x), int(dimensions.y), false, Image.FORMAT_RGBA8, packed_bytes)
 	var img_texture = ImageTexture.create_from_image(final_image)
-
-	if dimensions == PREVIEW_RESOLUTION:
+	
+	var default_res: Vector2i
+	default_res.x = clamp(target_resolution.x/PREVIEW_SF, MIN_RES.x, MAX_RES.x)
+	default_res.y = clamp(target_resolution.y/PREVIEW_SF, MIN_RES.y, MAX_RES.y)
+	if dimensions == default_res:
 		img.texture = img_texture
 
 	return img_texture
@@ -396,7 +375,7 @@ func randomise_sliders() -> void:
 	noise_seed = rand.randi()
 	@warning_ignore("int_as_enum_without_cast")
 	noise_type = rand.randi_range(0, 5)
-	frequency = rand.randf_range(0, 0.1)
+	frequency = clamp(rand.randfn(0.1, 0.1), 0.0001, 1.0)
 	offset = Vector2(rand.randi_range(-50, 50), rand.randi_range(-50, 50))
 	@warning_ignore("int_as_enum_without_cast")
 	fractal_type = rand.randi_range(0, 3)
@@ -413,6 +392,10 @@ func randomise_sliders() -> void:
 	refresh_image()
 
 func randomise_colors() -> void:
+	var _pressed: bool = bool(rand.randi_range(0,1))
+	gradient_button.set_pressed_no_signal(_pressed)
+	gradient = _pressed
+	
 	var color_pickers := color_container.get_children()
 	for i in range(colors.size() - 1, -1, -1):
 		colors[i] = Color(rand.randf(), rand.randf(), rand.randf())
@@ -433,7 +416,7 @@ func update_sliders() -> void:
 	_cellular_dist_func.selected = cellular_distance_function
 	_cellular_return_type.selected = cellular_return_type
 
-func start_timer(time: float) -> void:
+func start_timer(time: int) -> void:
 	if time >= 0:
 		timer.start(time + 0.01)
 
@@ -604,8 +587,7 @@ func _on_save_pressed() -> void:
 
 func _on_file_dialog_file_selected(path: String) -> void:
 	file_path = path
-	print("Attempting to save...")
-	SaveManager.save_prefs({"save-file": file_path, "auto-save-file": auto_file_path, "auto-save-time": auto_time, "max-photo-limit": max_photo_limit})
+	SaveManager.save_prefs({"save-file": file_path, "auto-save-file": auto_file_path, "auto-save-time": auto_time, "max-photo-limit": max_photo_limit, "output-resolution": target_resolution})
 	var final_img: Image = refresh_image(target_resolution).get_image()
 	save_to_file(final_img, file_path)
 
@@ -631,7 +613,7 @@ func _on_option_button_item_selected(index: int) -> void:
 
 func _on_file_dialog_dir_selected(dir: String) -> void:
 	auto_file_path = dir
-	SaveManager.save_prefs({"save-file": file_path, "auto-save-file": auto_file_path, "auto-save-time": auto_time, "max-photo-limit": max_photo_limit})
+	SaveManager.save_prefs({"save-file": file_path, "auto-save-file": auto_file_path, "auto-save-time": auto_time, "max-photo-limit": max_photo_limit, "output-resolution": target_resolution})
 
 	if auto_file_path != "" and auto_time >= 0:
 		start_timer(auto_time)
@@ -662,7 +644,7 @@ func _on_confirmation_dialog_canceled() -> void:
 
 func _on_popup_menu_id_pressed(id: int) -> void:
 	max_photo_limit = id
-	SaveManager.save_prefs({"save-file": file_path, "auto-save-file": auto_file_path, "auto-save-time": auto_time, "max-photo-limit": max_photo_limit})
+	SaveManager.save_prefs({"save-file": file_path, "auto-save-file": auto_file_path, "auto-save-time": auto_time, "max-photo-limit": max_photo_limit, "output-resolution": target_resolution})
 
 func _on_cog_pressed() -> void:
 	popup_menu.popup_centered()
@@ -670,17 +652,33 @@ func _on_cog_pressed() -> void:
 func _on_image_x_text_changed(new_text: String) -> void:
 	if new_text.is_valid_int():
 		var i := new_text.to_int()
-		if i > 0 and i < 4096:
-			target_resolution.x = new_text.to_int()
+		i = clampi(i, MIN_RES.x, MAX_RES.x)
+		if i != target_resolution.x:
+			target_resolution.x = i
+			img.size = round(target_resolution / PREVIEW_SF)
+			SaveManager.save_prefs({"save-file": file_path, "auto-save-file": auto_file_path, "auto-save-time": auto_time, "max-photo-limit": max_photo_limit, "output-resolution": target_resolution})
+			refresh_image()
+		
+		if i == MIN_RES.x or i == MAX_RES.x:
+			image_x.text = str(i)
 
 func _on_image_y_text_changed(new_text: String) -> void:
 	if new_text.is_valid_int():
 		var i := new_text.to_int()
-		if i > 0 and i < 4096:
-			target_resolution.x = new_text.to_int()
+		i = clampi(i, MIN_RES.y, MAX_RES.y)
+		if i != target_resolution.y:
+			target_resolution.y = i
+			img.size = round(target_resolution / PREVIEW_SF)
+			SaveManager.save_prefs({"save-file": file_path, "auto-save-file": auto_file_path, "auto-save-time": auto_time, "max-photo-limit": max_photo_limit, "output-resolution": target_resolution})
+			refresh_image()
+		
+		if i == MIN_RES.y or i == MAX_RES.y:
+			image_y.text = str(i)
 
 func _on_gradient_button_toggled(toggled_on: bool) -> void:
+	if gradient == toggled_on:
+		return
+	
 	gradient = toggled_on
 	refresh_image()
-
 #endregion
