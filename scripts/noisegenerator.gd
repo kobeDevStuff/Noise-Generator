@@ -12,9 +12,12 @@ var colors: Array[Color] = [
 	Color(0.0, 0.0, 0.0)
 ]
 
-const PREVIEW_SF: int = 4
+
 const MIN_RES: Vector2i = Vector2i(1,1)
 const MAX_RES: Vector2i = Vector2i(4096, 4096)
+
+var downscale_factor: float = 1.4
+var preview_scale_factor: float
 
 @export var target_resolution: Vector2i = Vector2(1024, 1024)
 @export var file_path: String
@@ -28,7 +31,7 @@ var auto_save_num: int
 const COLOR_PICKER = preload("res://scenes/color picker.tscn")
 
 @onready var color_container: VBoxContainer = $HBoxContainer2/Controls/Colors
-@onready var img: TextureRect = $HBoxContainer2/NoisePreview/img
+@onready var img: TextureRect = $HBoxContainer2/VBoxContainer/NoisePreview/img
 @onready var timer: Timer = $Timer
 @onready var option_button: OptionButton = $HBoxContainer2/Controls/VBoxContainer/HBoxContainer/VBoxContainer/OptionButton
 @onready var check_button: CheckButton = $HBoxContainer2/Controls/VBoxContainer/CheckButton
@@ -157,6 +160,7 @@ func _ready():
 	
 	get_window().close_requested.connect(_on_window_closed)
 	#endregion
+	# === Saving ===
 	var save: Dictionary = SaveManager.load_prefs()
 	auto_file_path = save["auto-save-file"]
 	file_path = save["save-file"]
@@ -167,10 +171,11 @@ func _ready():
 	new_string = new_string.erase(new_string.length() - 1, 1)
 	var array: Array = new_string.split(", ")
 	target_resolution = Vector2i(int(array[0]), int(array[1]))
-
 	$HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2/imageX.text = str(target_resolution.x)
 	$HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2/imageY.text = str(target_resolution.y)
-
+	
+	preview_scale_factor = calculate_scale_factor()
+	
 	if auto_time >= 0:
 		option_button.selected = option_button.get_item_index(auto_time)
 	
@@ -234,7 +239,12 @@ func _exit_tree():
 		_rd.free()
 		_rd = null
 #endregion
-
+func calculate_scale_factor() -> float:
+	var frac: Vector2i = DisplayServer.screen_get_usable_rect(DisplayServer.window_get_current_screen()).size
+	var width: float = (Vector2(frac) / Vector2(MAX_RES)).x
+	var height: float = (Vector2(frac) / Vector2(MAX_RES)).y
+	return min(width, height) / downscale_factor
+	
 func add_color() -> void:
 	var color_picker: NoiseColorPicker = COLOR_PICKER.instantiate()
 	color_container.add_child(color_picker)
@@ -256,7 +266,7 @@ func update_color(new_col: Color, id: int) -> void:
 	colors[id] = new_col
 	refresh_image()
 
-func refresh_image(dimensions: Vector2i = target_resolution/PREVIEW_SF) -> ImageTexture:
+func refresh_image(dimensions: Vector2i = target_resolution * preview_scale_factor) -> ImageTexture:
 	if _rd == null:
 		push_error("RenderingDevice not initialized. Cannot refresh image.")
 		return null
@@ -269,7 +279,7 @@ func refresh_image(dimensions: Vector2i = target_resolution/PREVIEW_SF) -> Image
 	var fnl := FastNoiseLite.new()
 	fnl.seed = noise_seed
 	fnl.noise_type = noise_type
-	fnl.frequency = frequency / PREVIEW_SF
+	fnl.frequency = frequency / preview_scale_factor
 	fnl.fractal_type = fractal_type
 	fnl.fractal_octaves = fractal_octaves
 	fnl.fractal_gain = fractal_gain
@@ -291,7 +301,7 @@ func refresh_image(dimensions: Vector2i = target_resolution/PREVIEW_SF) -> Image
 	if _current_color_buffer_rid.is_valid():
 		_rd.free_rid(_current_color_buffer_rid)
 	if _current_uniform_set_rid.is_valid():
-		RID()
+		_current_uniform_set_rid = RID()
 
 	# --- Create NEW RIDs ---
 	_current_input_tex_rid = _rd.texture_create(_format, _view, [image_bytes])
@@ -354,10 +364,11 @@ func refresh_image(dimensions: Vector2i = target_resolution/PREVIEW_SF) -> Image
 	var img_texture = ImageTexture.create_from_image(final_image)
 	
 	var default_res: Vector2i
-	default_res.x = clamp(target_resolution.x/PREVIEW_SF, MIN_RES.x, MAX_RES.x)
-	default_res.y = clamp(target_resolution.y/PREVIEW_SF, MIN_RES.y, MAX_RES.y)
+	default_res.x = clamp(target_resolution.x * preview_scale_factor, MIN_RES.x, MAX_RES.x)
+	default_res.y = clamp(target_resolution.y * preview_scale_factor, MIN_RES.y, MAX_RES.y)
 	if dimensions == default_res:
 		img.texture = img_texture
+		AudioManager.play("generate")
 
 	return img_texture
 
@@ -460,6 +471,25 @@ func count_photos_in_directory(directory_path: String) -> int:
 		push_error("Could not open directory: %s" % directory_path)
 	return count
 
+func wrong_input_tween(parent: Node) -> void:
+	AudioManager.play("error")
+	var panel := parent.get_child(0)
+	if panel is not Panel:
+		return
+	var tween: Tween = get_tree().create_tween()
+	tween.tween_property(panel, "modulate", Color.WHITE, 0.05)
+
+	var tween1: Tween = get_tree().create_tween()
+	var original_position = panel.position
+	var shake_amounts = [Vector2(-10, 0), Vector2(10, 0), Vector2(-7, 0), Vector2(7, 0), Vector2(-4, 0), Vector2(4, 0), Vector2(0, 0)]
+	var duration_per_shake = 0.05
+	for o in shake_amounts:
+		tween1.tween_property(panel, "position", original_position + o, duration_per_shake).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween1.tween_property(panel, "position", original_position, duration_per_shake).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	
+	await tween1.finished
+	var tween2: Tween = get_tree().create_tween()
+	tween2.tween_property(panel, "modulate", Color.TRANSPARENT, 0.05)
 #region events
 func _on_menu_item_pressed(id: int) -> void:
 	match id:
@@ -470,6 +500,7 @@ func _on_menu_item_pressed(id: int) -> void:
 			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 			get_window().show()
 			$HBoxContainer2/Controls/VBoxContainer/CheckButton/PopupMenu.popup_centered()
+			AudioManager.play("popup")
 		3:
 			get_tree().quit()
 
@@ -551,39 +582,50 @@ func _on_y_text_submitted(new_text: String) -> void:
 		refresh_image()
 
 func _on_noise_type_pressed(id: int) -> void:
+	#AudioManager.play("select")
 	@warning_ignore("int_as_enum_without_cast")
 	noise_type = id
 	refresh_image()
 
 func _on_fractal_type_pressed(id: int) -> void:
+	#AudioManager.play("select")
 	@warning_ignore("int_as_enum_without_cast")
 	fractal_type = id
 	refresh_image()
 
 func _on_cellular_dist_func_pressed(id: int) -> void:
+	#AudioManager.play("select")
 	@warning_ignore("int_as_enum_without_cast")
 	cellular_distance_function = id
 	refresh_image()
 
 func _on_cellular_return_type_pressed(id: int) -> void:
+	#AudioManager.play("select")
 	@warning_ignore("int_as_enum_without_cast")
 	cellular_return_type = id
 	refresh_image()
 
 func _on_add_color_pressed() -> void:
+	#AudioManager.play("select")
 	add_color()
 
 func _on_remove_color_pressed() -> void:
+	#AudioManager.play("select")
 	remove_color()
 
 func _on_randomise_pressed() -> void:
+	#AudioManager.play("select")
 	randomise_sliders()
 
 func _on_randomise_col_pressed() -> void:
+	#AudioManager.play("select")
 	randomise_colors()
 
 func _on_save_pressed() -> void:
-	$HBoxContainer2/Controls/VBoxContainer/Save/FileDialog.visible = true
+	#AudioManager.play("select")
+	$HBoxContainer2/Controls/VBoxContainer/Save/FileDialog.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_PICTURES)
+	$HBoxContainer2/Controls/VBoxContainer/Save/FileDialog.popup()
+	AudioManager.play("popup")
 
 func _on_file_dialog_file_selected(path: String) -> void:
 	file_path = path
@@ -592,11 +634,14 @@ func _on_file_dialog_file_selected(path: String) -> void:
 	save_to_file(final_img, file_path)
 
 func _on_apply_pressed() -> void:
+	#AudioManager.play("select")
 	refresh_image()
 
 func _on_check_button_toggled(toggled_on: bool) -> void:
+	#AudioManager.play("select")
 	if toggled_on:
 		confirmation_dialog.popup_centered()
+		AudioManager.play("popup")
 		$HBoxContainer2/Controls/VBoxContainer/HBoxContainer.visible = true
 	else:
 		$HBoxContainer2/Controls/VBoxContainer/HBoxContainer.visible = false
@@ -605,9 +650,14 @@ func _on_check_button_toggled(toggled_on: bool) -> void:
 		get_tree().set_auto_accept_quit(true)
 
 func _on_texture_button_pressed() -> void:
-	file_dialog.visible = true
+	#AudioManager.play("select")
+	file_dialog.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_PICTURES)
+	file_dialog.popup()
+	AudioManager.play("popup")
+
 
 func _on_option_button_item_selected(index: int) -> void:
+	#AudioManager.play("select")
 	auto_time = option_button.get_item_id(index)
 	start_timer(auto_time)
 
@@ -634,51 +684,70 @@ func _on_timer_timeout() -> void:
 		start_timer(auto_time)
 
 func _on_confirmation_dialog_confirmed() -> void:
+	#AudioManager.play("select")
 	background = true
 	get_tree().auto_accept_quit = false
 	start_timer(auto_time)
 
 func _on_confirmation_dialog_canceled() -> void:
+	#AudioManager.play("select")
 	background = false
 	get_tree().auto_accept_quit = true
 
 func _on_popup_menu_id_pressed(id: int) -> void:
+	#AudioManager.play("select")
 	max_photo_limit = id
 	SaveManager.save_prefs({"save-file": file_path, "auto-save-file": auto_file_path, "auto-save-time": auto_time, "max-photo-limit": max_photo_limit, "output-resolution": target_resolution})
 
 func _on_cog_pressed() -> void:
+	#AudioManager.play("select")
 	popup_menu.popup_centered()
+	AudioManager.play("popup")
 
 func _on_image_x_text_changed(new_text: String) -> void:
 	if new_text.is_valid_int():
 		var i := new_text.to_int()
-		i = clampi(i, MIN_RES.x, MAX_RES.x)
-		if i != target_resolution.x:
-			target_resolution.x = i
-			img.size = round(target_resolution / PREVIEW_SF)
+		var clampedi := clampi(i, MIN_RES.x, MAX_RES.x)
+		if clampedi != target_resolution.x: # Change in resolution
+			target_resolution.x = clampedi
+			img.size = ceil(target_resolution * preview_scale_factor)
 			SaveManager.save_prefs({"save-file": file_path, "auto-save-file": auto_file_path, "auto-save-time": auto_time, "max-photo-limit": max_photo_limit, "output-resolution": target_resolution})
 			refresh_image()
-		
-		if i == MIN_RES.x or i == MAX_RES.x:
-			image_x.text = str(i)
+			
+		if i < MIN_RES.x or i > MAX_RES.x: #exceeds boundaries
+			image_x.text = str(clampedi)
+			wrong_input_tween(image_x)
 
 func _on_image_y_text_changed(new_text: String) -> void:
 	if new_text.is_valid_int():
 		var i := new_text.to_int()
-		i = clampi(i, MIN_RES.y, MAX_RES.y)
-		if i != target_resolution.y:
-			target_resolution.y = i
-			img.size = round(target_resolution / PREVIEW_SF)
+		var clampedi := clampi(i, MIN_RES.y, MAX_RES.y)
+		if clampedi != target_resolution.y: # Change in resolution
+			target_resolution.y = clampedi
+			img.size = ceil(target_resolution * preview_scale_factor)
 			SaveManager.save_prefs({"save-file": file_path, "auto-save-file": auto_file_path, "auto-save-time": auto_time, "max-photo-limit": max_photo_limit, "output-resolution": target_resolution})
 			refresh_image()
-		
-		if i == MIN_RES.y or i == MAX_RES.y:
-			image_y.text = str(i)
+			
+		if i < MIN_RES.y or i > MAX_RES.y: #exceeds boundaries
+			image_y.text = str(clampedi)
+			wrong_input_tween(image_y)
 
 func _on_gradient_button_toggled(toggled_on: bool) -> void:
+	#AudioManager.play("select")
 	if gradient == toggled_on:
 		return
 	
 	gradient = toggled_on
 	refresh_image()
+
+func _on_resized() -> void:
+	preview_scale_factor = calculate_scale_factor()
+
+func _on_preview_slider_value_changed(value: float) -> void:
+	downscale_factor = 1/value
+
+func _on_preview_slider_drag_ended(value_changed: bool) -> void:
+	if value_changed:
+		preview_scale_factor = calculate_scale_factor()
+		refresh_image()
 #endregion

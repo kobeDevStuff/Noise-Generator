@@ -12,9 +12,12 @@ config_version=5
 
 config/name="Noise Generator"
 config/description="A simple application to generate noise textures."
-config/version="1.0.0"
+config/version="1.0.3"
 run/main_scene="uid://bdttbi1kldvv5"
 config/features=PackedStringArray("4.4", "Forward Plus")
+boot_splash/bg_color=Color(0.592157, 0.592157, 0.592157, 1)
+boot_splash/fullsize=false
+boot_splash/image="uid://bw8eftxkay4ll"
 config/icon="uid://bw8eftxkay4ll"
 config/windows_native_icon="res://resources/Icon.ico"
 
@@ -22,12 +25,12 @@ config/windows_native_icon="res://resources/Icon.ico"
 
 ControlManager="*res://scripts/control_manager.gd"
 SaveManager="*res://scripts/save_manager.gd"
+AudioManager="*res://scripts/sound_manager.gd"
 
 [display]
 
 window/size/viewport_width=1920
 window/size/viewport_height=1080
-window/size/borderless=true
 window/energy_saving/keep_screen_on=false
 window/stretch/aspect="expand"
 window/vsync/vsync_mode=0

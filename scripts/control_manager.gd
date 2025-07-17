@@ -1,7 +1,6 @@
 extends Node
 class_name ControlManger
 
-
 var noise_gen: NoiseGen
 
 func _ready() -> void:

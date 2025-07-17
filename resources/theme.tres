@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=86 format=4 uid="uid://jie24re78fkg"]
+[gd_resource type="Theme" load_steps=87 format=4 uid="uid://jie24re78fkg"]
 
 [ext_resource type="FontFile" uid="uid://chddx30841j86" path="res://resources/JetBrainsMono-VariableFont_wght.ttf" id="1_owntx"]
 [ext_resource type="StyleBox" uid="uid://bu0ewl7n2nvds" path="res://resources/blueOutline.tres" id="2_aaf3v"]
@@ -1583,6 +1583,21 @@ corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
 corner_detail = 5
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_iojti"]
+bg_color = Color(0.996078, 0.239216, 0.180392, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.996078, 0.239216, 0.180392, 0.286275)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0.996078, 0.239216, 0.180392, 0.243137)
+shadow_size = 2
+shadow_offset = Vector2(0, 2)
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rdpxx"]
 bg_color = Color(0.933333, 0.933333, 0.933333, 1)
 border_width_left = 8
@@ -1595,10 +1610,6 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 corner_detail = 5
-expand_margin_left = 8.0
-expand_margin_top = 8.0
-expand_margin_right = 8.0
-expand_margin_bottom = 8.0
 shadow_color = Color(0, 0, 0, 0.2)
 shadow_size = 8
 shadow_offset = Vector2(0, 4)
@@ -1826,6 +1837,7 @@ OptionButton/styles/focus = ExtResource("2_aaf3v")
 OptionButton/styles/hover = ExtResource("3_yp2uj")
 OptionButton/styles/normal = ExtResource("4_dhnw2")
 OptionButton/styles/pressed = SubResource("StyleBoxEmpty_p5l2b")
+Panel/styles/panel = SubResource("StyleBoxFlat_iojti")
 PanelContainer/styles/panel = SubResource("StyleBoxFlat_rdpxx")
 PopupMenu/colors/font_color = Color(0.4, 0.4, 0.4, 1)
 PopupMenu/colors/font_hover_color = Color(0.215902, 0.215902, 0.215902, 1)
