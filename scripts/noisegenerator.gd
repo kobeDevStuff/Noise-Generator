@@ -15,13 +15,17 @@ var colors: Array[Color] = [
 
 const MIN_RES: Vector2i = Vector2i(1,1)
 const MAX_RES: Vector2i = Vector2i(4096, 4096)
+const MAX_COLORS: int = 12
+const MIN_COLORS: int = 2
 
-var downscale_factor: float = 1.4
-var preview_scale_factor: float
+var user_preview_scale: float = 0.5
+var preview_scale_factor: float = 1.4
 
+@export var preview_margin: Vector2 = Vector2(0.4, 0.8) # Horizontal, Vertical margin
 @export var target_resolution: Vector2i = Vector2(1024, 1024)
 @export var file_path: String
 @export var auto_file_path: String
+
 var auto_time: int
 var max_photo_limit: int
 var background: bool = false
@@ -30,17 +34,21 @@ var auto_save_num: int
 ## Color picker
 const COLOR_PICKER = preload("res://scenes/color picker.tscn")
 
-@onready var color_container: VBoxContainer = $HBoxContainer2/Controls/Colors
-@onready var img: TextureRect = $HBoxContainer2/VBoxContainer/NoisePreview/img
-@onready var timer: Timer = $Timer
-@onready var option_button: OptionButton = $HBoxContainer2/Controls/VBoxContainer/HBoxContainer/VBoxContainer/OptionButton
-@onready var check_button: CheckButton = $HBoxContainer2/Controls/VBoxContainer/CheckButton
-@onready var file_dialog: FileDialog = $HBoxContainer2/Controls/VBoxContainer/CheckButton/FileDialog
-@onready var confirmation_dialog: ConfirmationDialog = $HBoxContainer2/Controls/VBoxContainer/CheckButton/ConfirmationDialog
-@onready var popup_menu: PopupMenu = $HBoxContainer2/Controls/VBoxContainer/CheckButton/PopupMenu
-@onready var gradient_button: CheckButton = $HBoxContainer2/Controls/Colors/gradient
-@onready var image_x: LineEdit = $HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2/imageX
-@onready var image_y: LineEdit = $HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2/imageY
+@onready var _color_container: VBoxContainer = $HBoxContainer2/Controls/Colors
+@onready var _img: TextureRect = $HBoxContainer2/NoisePreview/img
+@onready var _timer: Timer = $Timer
+@onready var _option_button: OptionButton = $HBoxContainer2/Controls/VBoxContainer/HBoxContainer/VBoxContainer/OptionButton
+@onready var _check_button: CheckButton = $HBoxContainer2/Controls/VBoxContainer/CheckButton
+@onready var _file_dialog: FileDialog = $HBoxContainer2/Controls/VBoxContainer/CheckButton/FileDialog
+@onready var _confirmation_dialog: ConfirmationDialog = $HBoxContainer2/Controls/VBoxContainer/CheckButton/ConfirmationDialog
+@onready var _popup_menu: PopupMenu = $HBoxContainer2/Controls/VBoxContainer/CheckButton/PopupMenu
+@onready var _gradient_button: CheckButton = $HBoxContainer2/Controls/Colors/gradient
+@onready var _image_x: LineEdit = $HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2/imageX
+@onready var _image_y: LineEdit = $HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2/imageY
+@onready var _add_color: Button = $HBoxContainer2/Controls/Colors/AddColor
+@onready var _remove_color: Button = $HBoxContainer2/Controls/Colors/RemoveColor
+@onready var _preview_slider: HSlider = $VBoxContainer/VBoxContainer/previewSlider
+@onready var _resize_debounce_timer: Timer = Timer.new()
 
 #region rendering
 var _rd: RenderingDevice = null
@@ -107,78 +115,9 @@ var _view: RDTextureView
 ## Return type from cellular noise calculations. See CellularReturnType for options.
 @export var cellular_return_type: FastNoiseLite.CellularReturnType = FastNoiseLite.CellularReturnType.RETURN_CELL_VALUE
 #endregion
-##region Advanced mode controls
-#@export var advanced_mode: bool
-#
-### Sets the strength of the fractal ping pong type.
-#@export var fractal_ping_pong_strength: float = 2.0
-#
-### Higher weighting means higher octaves have less impact if lower octaves have a large impact.
-#@export var fractal_weighted_strength: float = 0.0
-#
-### If enabled, another FastNoiseLite instance is used to warp the space, resulting in a distortion of the noise.
-#@export var domain_warp_enabled: bool = false
-#
-### Sets the maximum warp distance from the origin.
-#@export var domain_warp_amplitude: float = 30.0
-#
-### Determines the strength of each subsequent layer of the noise which is used to warp the space.
-#@export var domain_warp_fractal_gain: float = 0.5
-#
-### Octave lacunarity of the fractal noise which warps the space.
-#@export var domain_warp_fractal_lacunarity: float = 6.0
-#
-### The number of noise layers that are sampled to get the final value for the fractal noise which warps the space.
-#@export var domain_warp_fractal_octaves: int = 5
-#
-### The method for combining octaves into a fractal which is used to warp the space. See DomainWarpFractalType for options.
-#@export var domain_warp_fractal_type: FastNoiseLite.DomainWarpFractalType = FastNoiseLite.DomainWarpFractalType.DOMAIN_WARP_FRACTAL_PROGRESSIVE
-#
-### Frequency of the noise which warps the space.
-#@export var domain_warp_frequency: float = 0.05
-#
-### Sets the warp algorithm. See DomainWarpType for options.
-#@export var domain_warp_type: FastNoiseLite.DomainWarpType = FastNoiseLite.DomainWarpType.DOMAIN_WARP_SIMPLEX
-##endregion
 #region virtual
 func _ready():
-	#region system tray
-	var si: StatusIndicator = StatusIndicator.new()
-	si.icon = load("res://resources/Icon.png")
-	si.tooltip = "Noise Generator"
-	si.pressed.connect(_on_status_indicator_pressed)
-	add_child(si)
-	 
-	var menu: PopupMenu = PopupMenu.new()
-	add_child(menu)
-	menu.add_item("Show Window", 1)
-	menu.add_item("Settings", 2)
-	menu.add_separator()
-	menu.add_item("Quit", 3)
-	si.menu = menu.get_path()
-	menu.id_pressed.connect(_on_menu_item_pressed)
-	
-	get_window().close_requested.connect(_on_window_closed)
-	#endregion
-	# === Saving ===
-	var save: Dictionary = SaveManager.load_prefs()
-	auto_file_path = save["auto-save-file"]
-	file_path = save["save-file"]
-	auto_time = save["auto-save-time"]
-	max_photo_limit = save["max-photo-limit"]
-	var new_string: String = save["output-resolution"]
-	new_string = new_string.erase(0, 1)
-	new_string = new_string.erase(new_string.length() - 1, 1)
-	var array: Array = new_string.split(", ")
-	target_resolution = Vector2i(int(array[0]), int(array[1]))
-	$HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2/imageX.text = str(target_resolution.x)
-	$HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2/imageY.text = str(target_resolution.y)
-	
-	preview_scale_factor = calculate_scale_factor()
-	
-	if auto_time >= 0:
-		option_button.selected = option_button.get_item_index(auto_time)
-	
+	#region === Rendering Device Initialization ===
 	_rd = RenderingServer.create_local_rendering_device()
 	if _rd == null:
 		push_error("Failed to create local RenderingDevice!")
@@ -208,11 +147,67 @@ func _ready():
 	# Initialize format and view for textures once
 	_format = RDTextureFormat.new()
 	_format.format = RenderingDevice.DATA_FORMAT_R8G8B8A8_UNORM
-	_format.set_usage_bits(RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT | RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT)
+	_format.set_usage_bits(
+		RenderingDevice.TEXTURE_USAGE_STORAGE_BIT
+		| RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT
+		| RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT
+	)
 	_view = RDTextureView.new()
+	#endregion
+	
+	#region === System Tray Setup ===
+	var si: StatusIndicator = StatusIndicator.new()
+	si.icon = load("res://resources/Icon.png")
+	si.tooltip = "Noise Generator"
+	si.pressed.connect(_on_status_indicator_pressed)
+	add_child(si)
+	 
+	var menu: PopupMenu = PopupMenu.new()
+	add_child(menu)
+	menu.add_item("Show Window", 1)
+	menu.add_item("Settings", 2)
+	menu.add_separator()
+	menu.add_item("Quit", 3)
+	si.menu = menu.get_path()
+	menu.id_pressed.connect(_on_menu_item_pressed)
+	
+	get_window().close_requested.connect(_on_window_closed)
+	#endregion
+	
+	#region === Loading Preferences and UI Setup ===
+	var save: Dictionary = SaveManager.load_prefs()
+	auto_file_path = save["auto-save-file"]
+	file_path = save["save-file"]
+	auto_time = save["auto-save-time"]
+	max_photo_limit = save["max-photo-limit"]
 
-	set_process(true) # Start processing for the free queue
-	refresh_image() # Initial refresh
+	var new_string: String = save["output-resolution"]
+	new_string = new_string.erase(0, 1)
+	new_string = new_string.erase(new_string.length() - 1, 1)
+	var array: Array = new_string.split(", ")
+	target_resolution = Vector2i(int(array[0]), int(array[1]))
+
+	$HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2/imageX.text = str(target_resolution.x)
+	$HBoxContainer2/Controls/VBoxContainer/VBoxContainer/HBoxContainer2/imageY.text = str(target_resolution.y)
+	#endregion
+
+	#region === Initial Scale and Slider Setup ===
+	preview_scale_factor = calculate_scale_factor(target_resolution, user_preview_scale)
+	_preview_slider.max_value = calculate_max_preview_scale(target_resolution)
+
+	if auto_time >= 0:
+		_option_button.selected = _option_button.get_item_index(auto_time)
+	#endregion
+
+	set_process(true)  # Start processing for the free queue
+	refresh_image()  # Initial refresh
+	
+	#region === Resize Debounce Timer Setup ===
+	add_child(_resize_debounce_timer)
+	_resize_debounce_timer.wait_time = 0.15
+	_resize_debounce_timer.one_shot = true
+	_resize_debounce_timer.connect("timeout", Callable(self, "_on_resize_debounce_timeout"))
+	#endregion
 
 
 func _exit_tree():
@@ -239,22 +234,79 @@ func _exit_tree():
 		_rd.free()
 		_rd = null
 #endregion
-func calculate_scale_factor() -> float:
-	var frac: Vector2i = DisplayServer.screen_get_usable_rect(DisplayServer.window_get_current_screen()).size
-	var width: float = (Vector2(frac) / Vector2(MAX_RES)).x
-	var height: float = (Vector2(frac) / Vector2(MAX_RES)).y
-	return min(width, height) / downscale_factor
-	
+func calculate_scale_factor(_target_resolution: Vector2i, _user_scale: float, _margin: Vector2 = preview_margin) -> float:
+	var window_size: Vector2 = Vector2(DisplayServer.window_get_size())
+	window_size.x *= _margin.x
+	window_size.y *= _margin.y
+
+	var desired_size: Vector2 = _target_resolution * _user_scale
+	var scale_to_fit_window = min(window_size.x / desired_size.x, window_size.y / desired_size.y, 1.0)
+	return _user_scale * scale_to_fit_window
+
+
+func calculate_max_preview_scale(_target_resolution: Vector2i, _margin: Vector2 = preview_margin, _desired_cap: float = 4.0, _auto_refresh: bool = true) -> float:
+	var window_size: Vector2 = Vector2(DisplayServer.window_get_size())
+	window_size.x *= _margin.x
+	window_size.y *= _margin.y
+
+	var scale_x = window_size.x / _target_resolution.x
+	var scale_y = window_size.y / _target_resolution.y
+	var max_scale = min(scale_x, scale_y, _desired_cap)
+
+	_preview_slider.max_value = max_scale
+
+	if _preview_slider.value > max_scale:
+		_preview_slider.value = max_scale
+		preview_scale_factor = calculate_scale_factor(_target_resolution, user_preview_scale, _margin)
+		if _auto_refresh:
+			refresh_image()
+
+	return max_scale
+
+func recalculate_image_sizing() -> void:
+	# Define the margin (assuming you have this exported or hardcoded)
+	var margin = preview_margin
+
+	# Recalculate the max scale and update the slider max value
+	var max_scale := calculate_max_preview_scale(target_resolution, margin)
+	_preview_slider.max_value = max_scale
+
+	# Clamp slider value if it exceeds max scale
+	if _preview_slider.value > max_scale:
+		_preview_slider.value = max_scale
+
+	# Update the user scale from slider value
+	user_preview_scale = _preview_slider.value
+
+	# Recalculate effective preview scale factor for new resolution and margin
+	preview_scale_factor = calculate_scale_factor(target_resolution, user_preview_scale, margin)
+
+	# Update image preview size accordingly
+	_img.size = ceil(target_resolution * preview_scale_factor)
+
+	# Optionally refresh the image texture if required
+	#refresh_image()
+
+
 func add_color() -> void:
+	if colors.size() >= MAX_COLORS:
+		wrong_input_tween(_add_color)
+		return
 	var color_picker: NoiseColorPicker = COLOR_PICKER.instantiate()
-	color_container.add_child(color_picker)
+	_color_container.add_child(color_picker)
 	colors.append(color_picker.color)
 	var label: Label = color_picker.get_child(0)
 	label.text = "Color " + str(colors.size())
+	refresh_image()
 
 func remove_color() -> void:
+	if colors.size() <= MIN_COLORS:
+		wrong_input_tween(_remove_color)
+		return
+
 	colors.remove_at(colors.size() - 1)
-	remove_last_child_node(color_container)
+	remove_last_child_node(_color_container)
+	refresh_image()
 
 func remove_last_child_node(node: Node) -> void:
 	if node.get_child_count() > 0:
@@ -279,7 +331,18 @@ func refresh_image(dimensions: Vector2i = target_resolution * preview_scale_fact
 	var fnl := FastNoiseLite.new()
 	fnl.seed = noise_seed
 	fnl.noise_type = noise_type
-	fnl.frequency = frequency / preview_scale_factor
+	
+	# Check if we're generating a preview or final image
+	var default_preview_res: Vector2i = target_resolution * preview_scale_factor
+	var is_preview = (dimensions.x == clamp(default_preview_res.x, MIN_RES.x, MAX_RES.x) && 
+					  dimensions.y == clamp(default_preview_res.y, MIN_RES.y, MAX_RES.y))
+	
+	# Only scale frequency for preview, use base frequency for final output
+	if is_preview:
+		fnl.frequency = frequency / preview_scale_factor
+	else:
+		fnl.frequency = frequency
+	
 	fnl.fractal_type = fractal_type
 	fnl.fractal_octaves = fractal_octaves
 	fnl.fractal_gain = fractal_gain
@@ -363,11 +426,8 @@ func refresh_image(dimensions: Vector2i = target_resolution * preview_scale_fact
 	var final_image = Image.create_from_data(int(dimensions.x), int(dimensions.y), false, Image.FORMAT_RGBA8, packed_bytes)
 	var img_texture = ImageTexture.create_from_image(final_image)
 	
-	var default_res: Vector2i
-	default_res.x = clamp(target_resolution.x * preview_scale_factor, MIN_RES.x, MAX_RES.x)
-	default_res.y = clamp(target_resolution.y * preview_scale_factor, MIN_RES.y, MAX_RES.y)
-	if dimensions == default_res:
-		img.texture = img_texture
+	if is_preview:
+		_img.texture = img_texture
 		AudioManager.play("generate")
 
 	return img_texture
@@ -404,10 +464,10 @@ func randomise_sliders() -> void:
 
 func randomise_colors() -> void:
 	var _pressed: bool = bool(rand.randi_range(0,1))
-	gradient_button.set_pressed_no_signal(_pressed)
+	_gradient_button.set_pressed_no_signal(_pressed)
 	gradient = _pressed
 	
-	var color_pickers := color_container.get_children()
+	var color_pickers := _color_container.get_children()
 	for i in range(colors.size() - 1, -1, -1):
 		colors[i] = Color(rand.randf(), rand.randf(), rand.randf())
 		color_pickers[i+4].get_child(1).color = colors[i]
@@ -429,7 +489,7 @@ func update_sliders() -> void:
 
 func start_timer(time: int) -> void:
 	if time >= 0:
-		timer.start(time + 0.01)
+		_timer.start(time + 0.01)
 
 func save_to_file(image: Image, path: String) -> void:
 	if path == "" or path == null:
@@ -473,24 +533,33 @@ func count_photos_in_directory(directory_path: String) -> int:
 
 func wrong_input_tween(parent: Node) -> void:
 	AudioManager.play("error")
-	var panel := parent.get_child(0)
+	if !parent.has_node("Panel"):
+		return
+	var panel: Panel = parent.get_child(0)
 	if panel is not Panel:
 		return
+	
+	panel.position = Vector2.ZERO
 	var tween: Tween = get_tree().create_tween()
 	tween.tween_property(panel, "modulate", Color.WHITE, 0.05)
 
 	var tween1: Tween = get_tree().create_tween()
-	var original_position = panel.position
 	var shake_amounts = [Vector2(-10, 0), Vector2(10, 0), Vector2(-7, 0), Vector2(7, 0), Vector2(-4, 0), Vector2(4, 0), Vector2(0, 0)]
 	var duration_per_shake = 0.05
 	for o in shake_amounts:
-		tween1.tween_property(panel, "position", original_position + o, duration_per_shake).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	tween1.tween_property(panel, "position", original_position, duration_per_shake).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		tween1.tween_property(panel, "position", o, duration_per_shake).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween1.tween_property(panel, "position", Vector2.ZERO, duration_per_shake).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	
 	await tween1.finished
+	panel.position = Vector2.ZERO
 	var tween2: Tween = get_tree().create_tween()
 	tween2.tween_property(panel, "modulate", Color.TRANSPARENT, 0.05)
 #region events
+func _on_resize_debounce_timeout() -> void:
+	recalculate_image_sizing()
+	refresh_image()
+
+
 func _on_menu_item_pressed(id: int) -> void:
 	match id:
 		1:
@@ -640,25 +709,25 @@ func _on_apply_pressed() -> void:
 func _on_check_button_toggled(toggled_on: bool) -> void:
 	#AudioManager.play("select")
 	if toggled_on:
-		confirmation_dialog.popup_centered()
+		_confirmation_dialog.popup_centered()
 		AudioManager.play("popup")
 		$HBoxContainer2/Controls/VBoxContainer/HBoxContainer.visible = true
 	else:
 		$HBoxContainer2/Controls/VBoxContainer/HBoxContainer.visible = false
 		background = false
-		timer.stop()
+		_timer.stop()
 		get_tree().set_auto_accept_quit(true)
 
 func _on_texture_button_pressed() -> void:
 	#AudioManager.play("select")
-	file_dialog.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_PICTURES)
-	file_dialog.popup()
+	_file_dialog.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_PICTURES)
+	_file_dialog.popup()
 	AudioManager.play("popup")
 
 
 func _on_option_button_item_selected(index: int) -> void:
 	#AudioManager.play("select")
-	auto_time = option_button.get_item_id(index)
+	auto_time = _option_button.get_item_id(index)
 	start_timer(auto_time)
 
 func _on_file_dialog_dir_selected(dir: String) -> void:
@@ -670,13 +739,13 @@ func _on_file_dialog_dir_selected(dir: String) -> void:
 
 func _on_timer_timeout() -> void:
 	if auto_file_path != "" and auto_time >= 0:
-		if file_dialog.is_visible() and confirmation_dialog.is_visible() and popup_menu.is_visible(): # Wait for user to exit
+		if _file_dialog.is_visible() and _confirmation_dialog.is_visible() and _popup_menu.is_visible(): # Wait for user to exit
 			start_timer(auto_time)
 			return
 		
 		var num_images: int = count_photos_in_directory(auto_file_path)
 		if num_images >= max_photo_limit: # stop generating
-			check_button.set_pressed(false)
+			_check_button.set_pressed(false)
 			return
 		randomise_colors()
 		randomise_sliders()
@@ -701,36 +770,28 @@ func _on_popup_menu_id_pressed(id: int) -> void:
 
 func _on_cog_pressed() -> void:
 	#AudioManager.play("select")
-	popup_menu.popup_centered()
+	_popup_menu.popup_centered()
 	AudioManager.play("popup")
 
 func _on_image_x_text_changed(new_text: String) -> void:
 	if new_text.is_valid_int():
-		var i := new_text.to_int()
-		var clampedi := clampi(i, MIN_RES.x, MAX_RES.x)
-		if clampedi != target_resolution.x: # Change in resolution
-			target_resolution.x = clampedi
-			img.size = ceil(target_resolution * preview_scale_factor)
-			SaveManager.save_prefs({"save-file": file_path, "auto-save-file": auto_file_path, "auto-save-time": auto_time, "max-photo-limit": max_photo_limit, "output-resolution": target_resolution})
-			refresh_image()
-			
-		if i < MIN_RES.x or i > MAX_RES.x: #exceeds boundaries
-			image_x.text = str(clampedi)
-			wrong_input_tween(image_x)
+		var i := clampi(new_text.to_int(), MIN_RES.x, MAX_RES.x)
+		if i != target_resolution.x:
+			target_resolution.x = i
+			_on_target_resolution_changed()
+		if i != new_text.to_int():
+			_image_x.text = str(i)
+			wrong_input_tween(_image_x)
 
 func _on_image_y_text_changed(new_text: String) -> void:
 	if new_text.is_valid_int():
-		var i := new_text.to_int()
-		var clampedi := clampi(i, MIN_RES.y, MAX_RES.y)
-		if clampedi != target_resolution.y: # Change in resolution
-			target_resolution.y = clampedi
-			img.size = ceil(target_resolution * preview_scale_factor)
-			SaveManager.save_prefs({"save-file": file_path, "auto-save-file": auto_file_path, "auto-save-time": auto_time, "max-photo-limit": max_photo_limit, "output-resolution": target_resolution})
-			refresh_image()
-			
-		if i < MIN_RES.y or i > MAX_RES.y: #exceeds boundaries
-			image_y.text = str(clampedi)
-			wrong_input_tween(image_y)
+		var i := clampi(new_text.to_int(), MIN_RES.y, MAX_RES.y)
+		if i != target_resolution.y:
+			target_resolution.y = i
+			_on_target_resolution_changed()
+		if i != new_text.to_int():
+			_image_y.text = str(i)
+			wrong_input_tween(_image_y)
 
 func _on_gradient_button_toggled(toggled_on: bool) -> void:
 	#AudioManager.play("select")
@@ -741,13 +802,39 @@ func _on_gradient_button_toggled(toggled_on: bool) -> void:
 	refresh_image()
 
 func _on_resized() -> void:
-	preview_scale_factor = calculate_scale_factor()
+	if _resize_debounce_timer == null:
+		return
+	_resize_debounce_timer.start()
 
 func _on_preview_slider_value_changed(value: float) -> void:
-	downscale_factor = 1/value
+	user_preview_scale = value
 
 func _on_preview_slider_drag_ended(value_changed: bool) -> void:
 	if value_changed:
-		preview_scale_factor = calculate_scale_factor()
+		preview_scale_factor = calculate_scale_factor(target_resolution, user_preview_scale)
 		refresh_image()
+
+func _on_target_resolution_changed() -> void:
+	# Clamp to valid bounds
+	target_resolution.x = clampi(target_resolution.x, MIN_RES.x, MAX_RES.x)
+	target_resolution.y = clampi(target_resolution.y, MIN_RES.y, MAX_RES.y)
+	
+	recalculate_image_sizing()
+	
+	# Persist preferences with updated resolution
+	SaveManager.save_prefs({
+		"save-file": file_path,
+		"auto-save-file": auto_file_path,
+		"auto-save-time": auto_time,
+		"max-photo-limit": max_photo_limit,
+		"output-resolution": target_resolution
+	})
+
+	# Refresh image with updated sizing
+	refresh_image()
+
+func _on_fit_pressed() -> void:
+	_preview_slider.set_value(4.0)
+	_on_preview_slider_drag_ended(true)
+	
 #endregion

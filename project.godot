@@ -12,7 +12,7 @@ config_version=5
 
 config/name="Noise Generator"
 config/description="A simple application to generate noise textures."
-config/version="1.0.3"
+config/version="1.1.1"
 run/main_scene="uid://bdttbi1kldvv5"
 config/features=PackedStringArray("4.4", "Forward Plus")
 boot_splash/bg_color=Color(0.592157, 0.592157, 0.592157, 1)

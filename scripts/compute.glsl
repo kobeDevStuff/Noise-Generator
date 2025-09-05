@@ -27,15 +27,46 @@ void main() {
     int gradient_mode = params[0] & 1;
 
     if (gradient_mode == 1) {
-        float scaled = value * float(colors.length());
-        int index = int(floor(scaled));
-        int next_index = min(index + 1, colors.length() - 1);
-        out_color = mix(colors[index], colors[next_index], fract(scaled));
+        // Handle edge cases properly for gradient mode
+        if (colors.length() <= 1) {
+            // If we only have one color or no colors, use that color
+            out_color = colors.length() > 0 ? colors[0] : vec4(0.0, 0.0, 0.0, 1.0);
+        } else {
+            // Scale value to color range, but prevent out-of-bounds access
+            float scaled = value * float(colors.length() - 1);
+            int index = int(floor(scaled));
+            int next_index = index + 1;
+            
+            // Clamp indices to valid range
+            index = clamp(index, 0, colors.length() - 1);
+            next_index = clamp(next_index, 0, colors.length() - 1);
+            
+            // Calculate interpolation factor
+            float t = fract(scaled);
+            
+            // Ensure both colors have full alpha if they should
+            vec4 color1 = colors[index];
+            vec4 color2 = colors[next_index];
+            
+            // If either color has zero alpha, this could cause transparency artifacts
+            // Ensure alpha is at least preserved properly
+            if (color1.a == 0.0) color1.a = 1.0;
+            if (color2.a == 0.0) color2.a = 1.0;
+            
+            out_color = mix(color1, color2, t);
+        }
     } else {
+        // Discrete color mode
         int color_index = int(floor(value * float(colors.length())));
         color_index = clamp(color_index, 0, colors.length() - 1);
         out_color = colors[color_index];
+        
+        // Ensure alpha is set properly
+        if (out_color.a == 0.0) out_color.a = 1.0;
     }
+    
+    // Ensure final output has proper alpha
+    out_color.a = 1.0;
     
     imageStore(output_image, coord, out_color);
 }
